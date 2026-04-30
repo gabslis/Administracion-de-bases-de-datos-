@@ -9,6 +9,39 @@ app.use(cors());
 app.use(express.json());
 
 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// LOGIN paput
+app.post('/login', async (req, res) => {
+  const { correo, password } = req.body;
+const conn = await getWriteConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
+    if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
+
+    const usuario = rows[0];
+    if (password !== usuario.password) return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    const token = jwt.sign(
+      { cod_usuario: usuario.cod_usuario, nombre: usuario.nombre, cod_rol: usuario.cod_rol },
+      'secreto123',
+      { expiresIn: '8h' }
+    );
+
+    res.json({ 
+      token, 
+      usuario: { 
+        cod_usuario: usuario.cod_usuario, 
+        nombre: usuario.nombre, 
+        cod_rol: usuario.cod_rol 
+      } 
+    });
+  } finally {
+    conn.release();
+  }
+});
+
 // EQUIPOS
 
 
@@ -158,6 +191,9 @@ app.delete('/prestamos/:id', async (req, res) => {
 
 // USUARIOS
 //si
+// ══════════════════════════════
+// USUARIOS
+// ══════════════════════════════
 app.get('/usuarios', async (req, res) => {
   const conn = await getReadConnection();
   try {
@@ -165,30 +201,31 @@ app.get('/usuarios', async (req, res) => {
     res.json(rows);
   } finally { conn.release(); }
 });
-//no
+
 app.post('/usuarios', async (req, res) => {
   const conn = await getWriteConnection();
   try {
-    const { nombre, cod_rol, correo, fecha_ingreso, cod_estado_usuario } = req.body;
+    const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
     const [result] = await conn.query(
-      'INSERT INTO usuarios (nombre, cod_rol, correo, fecha_ingreso, cod_estado_usuario) VALUES (?, ?, ?, ?, ?)',
-      [nombre, cod_rol, correo, fecha_ingreso, cod_estado_usuario]
+      'INSERT INTO usuarios (nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario) VALUES (?, ?, ?, ?, ?, ?)',
+      [nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario]
     );
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-//daniel me debes 3 coras
+
 app.put('/usuarios/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
-    const { nombre, cod_rol, correo, fecha_ingreso, cod_estado_usuario } = req.body;
+    const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
     await conn.query(
-      'UPDATE usuarios SET nombre=?, cod_rol=?, correo=?, fecha_ingreso=?, cod_estado_usuario=? WHERE cod_usuario=?',
-      [nombre, cod_rol, correo, fecha_ingreso, cod_estado_usuario, req.params.id]
+      'UPDATE usuarios SET nombre=?, cod_rol=?, correo=?, password=?, fecha_ingreso=?, cod_estado_usuario=? WHERE cod_usuario=?',
+      [nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario, req.params.id]
     );
     res.json({ ok: true });
   } finally { conn.release(); }
 });
+
 app.delete('/usuarios/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
@@ -196,7 +233,6 @@ app.delete('/usuarios/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-
 
 // SERVIDOR
 // Iniciar servidor en el puerto 3000 porq es el default y ya, no hay ciencia aqui osea de la api, es solo para que se pueda acceder a ella desde el frontend y
