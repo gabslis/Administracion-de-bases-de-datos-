@@ -11,7 +11,7 @@ start "CLIENT" cmd /k "cd client && npm run dev"
 
 echo --------------------------------------------------
 echo ¡Todo en marcha!
-echo Para entrar desde tu celular (misma red Wi-Fi), usa esta direccion:
-echo 👉 http://192.168.1.52:5173
+echo El frontend estara disponible en tu navegador en:
+echo 👉 http://localhost:5173
 echo --------------------------------------------------
 pause
