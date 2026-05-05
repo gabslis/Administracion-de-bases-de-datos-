@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import api from '../api/axios';
 
 function Login() {
@@ -11,8 +12,6 @@ function Login() {
   const [nombre, setNombre] = useState('');
   const [codRol, setCodRol] = useState('');
   
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [roles, setRoles] = useState([]);
   
   const navigate = useNavigate();
@@ -27,14 +26,15 @@ function Login() {
         if (allowedRoles.length > 0) {
           setCodRol(allowedRoles[0].cod_rol);
         }
-      }).catch(err => console.error("Error al cargar roles:", err));
+      }).catch(err => {
+        console.error("Error al cargar roles:", err);
+        toast.error("Error al cargar los roles del sistema");
+      });
     }
   }, [isLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     
     try {
       if (isLogin) {
@@ -42,10 +42,10 @@ function Login() {
         const res = await api.post('/login', { correo, password });
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('usuario', JSON.stringify(res.data.usuario));
+        toast.success(`Bienvenido, ${res.data.usuario.nombre}`);
         navigate('/dashboard');
       } else {
         // REGISTRO
-        // Default values: cod_estado_usuario = 1 (Activo)
         const fecha_ingreso = new Date().toISOString().split('T')[0];
         
         await api.post('/usuarios', {
@@ -57,12 +57,12 @@ function Login() {
           cod_estado_usuario: 1
         });
         
-        setSuccess('Usuario creado exitosamente. Ahora puedes iniciar sesión.');
+        toast.success('Usuario creado exitosamente. Ahora puedes iniciar sesión.');
         setIsLogin(true); // Switch back to login
         setPassword('');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Ocurrió un error. Verifica tus datos.');
+      toast.error(err.response?.data?.error || 'Ocurrió un error. Verifica tus datos.');
     }
   };
 
@@ -81,18 +81,6 @@ function Login() {
             {isLogin ? 'Ingresa tus credenciales para continuar' : 'Crea tu cuenta para acceder'}
           </p>
         </div>
-
-        {error && (
-          <div style={{ background: 'var(--danger)', color: 'white', padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div style={{ background: 'var(--success)', color: 'white', padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem' }}>
-            {success}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {!isLogin && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../api/axios";
 
 const vacio = { nombre: "", cod_rol: "", correo: "", password: "", fecha_ingreso: "", cod_estado_usuario: "" };
@@ -18,6 +19,7 @@ function Usuarios() {
       setUsuarios(res.data);
     } catch(err) {
       console.error(err);
+      toast.error("Error al cargar la lista de usuarios");
     }
   };
 
@@ -40,15 +42,17 @@ function Usuarios() {
     try {
       if (editId) {
         await api.put("/usuarios/" + editId, form);
+        toast.success("Usuario actualizado correctamente");
       } else {
         await api.post("/usuarios", form);
+        toast.success("Usuario creado correctamente");
       }
       setForm(vacio);
       setEditId(null);
       setMostrarForm(false);
       cargar();
     } catch(err) {
-      alert("Error: " + (err.response?.data?.error || err.message));
+      toast.error("Error: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -69,9 +73,10 @@ function Usuarios() {
     if (!confirm("¿Eliminar usuario?")) return;
     try {
       await api.delete("/usuarios/" + id);
+      toast.success("Usuario eliminado");
       cargar();
     } catch {
-      alert("No se puede eliminar: tiene registros asociados");
+      toast.error("No se puede eliminar: tiene registros asociados");
     }
   };
 

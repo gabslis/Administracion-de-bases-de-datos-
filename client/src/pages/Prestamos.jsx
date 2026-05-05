@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../api/axios";
 
 function Prestamos() {
@@ -39,6 +40,7 @@ function Prestamos() {
       setPrestamos(data);
     } catch(err) {
       console.error(err);
+      toast.error("Error al cargar préstamos");
     }
   };
 
@@ -69,11 +71,12 @@ function Prestamos() {
     e.preventDefault();
     try {
       await api.post("/prestamos", form);
+      toast.success("Equipo asignado exitosamente");
       setForm(vacio);
       setMostrarForm(false);
       cargar();
     } catch(err) {
-      alert("Error: " + (err.response?.data?.error || err.message));
+      toast.error("Error: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -81,9 +84,10 @@ function Prestamos() {
     if (!confirm("¿Eliminar asignación?")) return;
     try {
       await api.delete("/prestamos/" + id);
+      toast.success("Asignación eliminada");
       cargar();
     } catch {
-      alert("Error al eliminar");
+      toast.error("Error al eliminar");
     }
   };
 

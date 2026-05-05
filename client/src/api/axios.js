@@ -2,7 +2,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  // Cambiado de localhost a tu IP local para permitir acceso desde otros dispositivos (celular, otra PC)
+  baseURL: 'http://192.168.1.52:3000',
 });
 
 // Agrega el token automáticamente en cada request

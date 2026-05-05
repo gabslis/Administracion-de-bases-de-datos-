@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import api from "../api/axios";
 
 function Mantenimientos() {
@@ -64,11 +65,12 @@ function Mantenimientos() {
         fecha_inicio_mantenimiento: new Date().toISOString().split('T')[0],
       };
       await api.post("/mantenimientos", payload);
+      toast.success("Solicitud de mantenimiento enviada");
       setFormCrear({ cod_equipo: "", cod_tipo_mantenimiento: "" });
       setMostrarForm(false);
       cargarDatos();
     } catch (err) {
-      alert("Error al solicitar mantenimiento");
+      toast.error("Error al solicitar mantenimiento");
     }
   };
 
@@ -82,11 +84,12 @@ function Mantenimientos() {
         fecha_fin_mantenimiento: fechaEntrega
       };
       await api.put(`/mantenimientos/${ticketAceptar.cod_mantenimiento}`, payload);
+      toast.success("Ticket aceptado correctamente");
       setTicketAceptar(null);
       setFechaEntrega("");
       cargarDatos();
     } catch (err) {
-      alert("Error al aceptar el ticket");
+      toast.error("Error al aceptar el ticket");
     }
   };
 
@@ -100,9 +103,10 @@ function Mantenimientos() {
         hora_retirada: new Date().toTimeString().split(' ')[0]
       };
       await api.put(`/mantenimientos/${mantenimiento.cod_mantenimiento}`, payload);
+      toast.success("Mantenimiento finalizado");
       cargarDatos();
     } catch (err) {
-      alert("Error al finalizar el ticket");
+      toast.error("Error al finalizar el ticket");
     }
   };
 
@@ -110,9 +114,10 @@ function Mantenimientos() {
     if (!confirm("¿Eliminar este registro?")) return;
     try {
       await api.delete("/mantenimientos/" + id);
+      toast.success("Registro eliminado");
       cargarDatos();
     } catch (err) {
-      alert("Error al eliminar");
+      toast.error("Error al eliminar");
     }
   };
 
