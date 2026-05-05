@@ -189,9 +189,9 @@ function Prestamos() {
               <thead>
                 <tr>
                   <th>ID Préstamo</th>
-                  <th>ID Usuario</th>
-                  <th>ID Equipo</th>
-                  <th>ID Aula</th>
+                  <th>Usuario</th>
+                  <th>Equipo</th>
+                  <th>Aula</th>
                   <th>Fecha Salida</th>
                   <th>Devolución</th>
                   {isAdminOrTecnico && <th>Acciones</th>}
@@ -201,9 +201,14 @@ function Prestamos() {
                 {prestamos.map((p) => (
                   <tr key={p.cod_prestamo}>
                     <td style={{ color: "var(--primary)", fontWeight: 500 }}>#{p.cod_prestamo}</td>
-                    <td>{p.cod_usuario}</td>
-                    <td>{p.cod_equipo}</td>
-                    <td>{p.cod_aula}</td>
+                    <td>{p.nombre_usuario || `ID: ${p.cod_usuario}`}</td>
+                    <td>
+                      <div>{p.nombre_equipo || `ID: ${p.cod_equipo}`}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+                        {p.nombre_accesorio ? `+ ${p.nombre_accesorio}` : 'Sin accesorio'}
+                      </div>
+                    </td>
+                    <td>{p.nombre_aula || `ID: ${p.cod_aula}`}</td>
                     <td>{p.fecha_salida?.split("T")[0]}</td>
                     <td>{p.fecha_devolucion_programada?.split("T")[0]}</td>
                     {isAdminOrTecnico && (

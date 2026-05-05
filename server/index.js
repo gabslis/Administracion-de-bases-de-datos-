@@ -161,11 +161,24 @@ app.get('/accesorios', async (req, res) => {
 
 // PRESTAMOS
 
-//obtener prestamos (Q Queria hacer the dudcito)
+//obtener prestamos
 app.get('/prestamos', async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const [rows] = await conn.query('SELECT * FROM prestamos');
+    const query = `
+      SELECT 
+        p.*,
+        u.nombre as nombre_usuario,
+        e.nombre_equipo, e.serial as serial_equipo,
+        a.nombre_aula,
+        acc.nombre_accesorio
+      FROM prestamos p
+      LEFT JOIN usuarios u ON p.cod_usuario = u.cod_usuario
+      LEFT JOIN equipos e ON p.cod_equipo = e.cod_equipo
+      LEFT JOIN aulas a ON p.cod_aula = a.cod_aula
+      LEFT JOIN accesorios acc ON p.cod_accesorio = acc.cod_accesorio
+    `;
+    const [rows] = await conn.query(query);
     res.json(rows);
   } finally { conn.release(); }
 });
