@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/usuarios';
 import Prestamos from './pages/Prestamos';
+import Mantenimientos from './pages/Mantenimientos';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children }) {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/usuarios" element={<PrivateRoute><Usuarios /></PrivateRoute>} />
         <Route path="/prestamos" element={<PrivateRoute><Prestamos /></PrivateRoute>} />
+        <Route path="/mantenimientos" element={<PrivateRoute><Mantenimientos /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>

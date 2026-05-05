@@ -90,11 +90,41 @@ app.delete('/equipos/:id', async (req, res) => {
 
 // MANTENIMIENTOS
 
+//obtener estados y tipos
+app.get('/estado_mantenimiento', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM estado_mantenimiento');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+
+app.get('/tipo_mantenimiento', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM tipo_mantenimiento');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+
 //obtener mantenimientos (yo)
 app.get('/mantenimientos', async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const [rows] = await conn.query('SELECT * FROM mantenimientos');
+    const query = `
+      SELECT 
+        m.*,
+        u.nombre as nombre_usuario,
+        e.nombre_equipo, e.serial as serial_equipo,
+        em.tipo_estado_mantenimiento as nombre_estado,
+        tm.tipo_mantenimiento as nombre_tipo
+      FROM mantenimientos m
+      LEFT JOIN usuarios u ON m.cod_usuario = u.cod_usuario
+      LEFT JOIN equipos e ON m.cod_equipo = e.cod_equipo
+      LEFT JOIN estado_mantenimiento em ON m.cod_estado_mantenimiento = em.cod_estado_mantenimiento
+      LEFT JOIN tipo_mantenimiento tm ON m.cod_tipo_mantenimiento = tm.cod_tipo_mantenimiento
+    `;
+    const [rows] = await conn.query(query);
     res.json(rows);
   } finally { conn.release(); }
 });
@@ -104,32 +134,72 @@ app.post('/mantenimientos', async (req, res) => {
   try {
     const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
       fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
+      
+    const val = (v) => v === undefined ? null : v;
+    
     const [result] = await conn.query(
       `INSERT INTO mantenimientos 
        (cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
         fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada]
+      [
+        val(cod_equipo), 
+        val(cod_tipo_mantenimiento), 
+        val(cod_usuario), 
+        val(cod_estado_mantenimiento),
+        val(fecha_inicio_mantenimiento), 
+        val(hora_recibida), 
+        val(fecha_fin_mantenimiento), 
+        val(hora_retirada)
+      ]
     );
     res.json({ id: result.insertId });
+  } catch (err) {
+    console.error("Error creating mantenimiento:", err);
+    res.status(500).json({ error: err.message });
   } finally { conn.release(); }
-  //actualizar mantenimientos)
 });
 app.put('/mantenimientos/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
-    const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
+    let { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
+      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, Hora_retirada } = req.body;
+      
+    // mysql2 throws an error if undefined is passed to parameterized query
+    // so we fallback to null if undefined
+    const val = (v) => v === undefined ? null : v;
+    
+    // Fix case issue with hora_retirada from the database
+    const finalHoraRetirada = val(hora_retirada) !== null ? val(hora_retirada) : val(Hora_retirada);
+
+    // Format dates to YYYY-MM-DD if they are full ISO strings
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
+      return dateStr;
+    };
+
     await conn.query(
       `UPDATE mantenimientos SET
        cod_equipo=?, cod_tipo_mantenimiento=?, cod_usuario=?, cod_estado_mantenimiento=?,
        fecha_inicio_mantenimiento=?, hora_recibida=?, fecha_fin_mantenimiento=?, hora_retirada=?
        WHERE cod_mantenimiento=?`,
-      [cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, req.params.id]
+      [
+        val(cod_equipo), 
+        val(cod_tipo_mantenimiento), 
+        val(cod_usuario), 
+        val(cod_estado_mantenimiento),
+        formatDate(fecha_inicio_mantenimiento), 
+        val(hora_recibida), 
+        formatDate(fecha_fin_mantenimiento), 
+        finalHoraRetirada, 
+        req.params.id
+      ]
     );
     res.json({ ok: true });
+  } catch (err) {
+    console.error("Error updating mantenimiento:", err);
+    res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
 //borrar mantenimientos CMAMUT

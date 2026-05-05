@@ -50,6 +50,14 @@ function Layout({ children }) {
             <span className="sidebar-icon">📦</span>
             <span className="sidebar-text">Asignaciones</span>
           </NavLink>
+
+          <NavLink 
+            to="/mantenimientos" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">🔧</span>
+            <span className="sidebar-text">Mantenimientos</span>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">
