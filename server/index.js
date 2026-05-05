@@ -15,13 +15,13 @@ const jwt = require('jsonwebtoken');
 // LOGIN paput
 app.post('/login', async (req, res) => {
   const { correo, password } = req.body;
-const conn = await getWriteConnection();
+  const conn = await getWriteConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
     if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
 
     const usuario = rows[0];
-    if (password !== usuario.password) return res.status(401).json({ error: 'Contraseña incorrecta' });
+    if (password !== usuario.contraseña) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
     const token = jwt.sign(
       { cod_usuario: usuario.cod_usuario, nombre: usuario.nombre, cod_rol: usuario.cod_rol },
@@ -29,13 +29,13 @@ const conn = await getWriteConnection();
       { expiresIn: '8h' }
     );
 
-    res.json({ 
-      token, 
-      usuario: { 
-        cod_usuario: usuario.cod_usuario, 
-        nombre: usuario.nombre, 
-        cod_rol: usuario.cod_rol 
-      } 
+    res.json({
+      token,
+      usuario: {
+        cod_usuario: usuario.cod_usuario,
+        nombre: usuario.nombre,
+        cod_rol: usuario.cod_rol
+      }
     });
   } finally {
     conn.release();
@@ -103,14 +103,14 @@ app.post('/mantenimientos', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-            fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
+      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
     const [result] = await conn.query(
       `INSERT INTO mantenimientos 
        (cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
         fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-       fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada]
+        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada]
     );
     res.json({ id: result.insertId });
   } finally { conn.release(); }
@@ -120,14 +120,14 @@ app.put('/mantenimientos/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-            fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
+      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
     await conn.query(
       `UPDATE mantenimientos SET
        cod_equipo=?, cod_tipo_mantenimiento=?, cod_usuario=?, cod_estado_mantenimiento=?,
        fecha_inicio_mantenimiento=?, hora_recibida=?, fecha_fin_mantenimiento=?, hora_retirada=?
        WHERE cod_mantenimiento=?`,
       [cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-       fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, req.params.id]
+        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, req.params.id]
     );
     res.json({ ok: true });
   } finally { conn.release(); }
@@ -207,7 +207,7 @@ app.post('/usuarios', async (req, res) => {
   try {
     const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
     const [result] = await conn.query(
-      'INSERT INTO usuarios (nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO usuarios (nombre, cod_rol, correo, contraseña, fecha_ingreso, cod_estado_usuario) VALUES (?, ?, ?, ?, ?, ?)',
       [nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario]
     );
     res.json({ id: result.insertId });
@@ -219,7 +219,7 @@ app.put('/usuarios/:id', async (req, res) => {
   try {
     const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
     await conn.query(
-      'UPDATE usuarios SET nombre=?, cod_rol=?, correo=?, password=?, fecha_ingreso=?, cod_estado_usuario=? WHERE cod_usuario=?',
+      'UPDATE usuarios SET nombre=?, cod_rol=?, correo=?, contraseña=?, fecha_ingreso=?, cod_estado_usuario=? WHERE cod_usuario=?',
       [nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario, req.params.id]
     );
     res.json({ ok: true });
