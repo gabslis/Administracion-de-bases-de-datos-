@@ -12,7 +12,7 @@ function Dashboard() {
     equipos: 0,
     usuarios: 0,
     prestamos: 0,
-    mantenimientos: 0,
+    mantenimientosActivos: 0,
   });
   
   const [actividadReciente, setActividadReciente] = useState([]);
@@ -41,11 +41,11 @@ function Dashboard() {
           equipos: equipos.data.length,
           usuarios: usuarios.data.length,
           prestamos: prestamosList.length,
-          mantenimientos: mantenimientosList.length,
+          // Solo contar los tickets Pendientes(1) y En Proceso(2)
+          mantenimientosActivos: mantenimientosList.filter(m => m.cod_estado_mantenimiento === 1 || m.cod_estado_mantenimiento === 2).length,
         });
 
         // Configurar actividad reciente (últimos 5 mantenimientos)
-        // Se asume que el backend devuelve los mantenimientos en orden o podemos ordenarlos por ID
         const ultimosMantenimientos = [...mantenimientosList]
           .sort((a, b) => b.cod_mantenimiento - a.cod_mantenimiento)
           .slice(0, 5);
@@ -54,14 +54,12 @@ function Dashboard() {
       } catch (err) {
         console.error(err);
       } finally {
-        // Simulamos un pequeño retardo para que la animación de carga se aprecie suavemente
         setTimeout(() => setIsLoading(false), 500);
       }
     };
     if (usuario) fetchDatos();
-  }, []); // Dependencias vacías para que solo se ejecute al montar el componente
+  }, []);
 
-  // Componente interno para las tarjetas de estadísticas
   const StatCard = ({ title, value, colorClass, icon }) => (
     <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {isLoading ? (
@@ -77,6 +75,15 @@ function Dashboard() {
       )}
     </div>
   );
+
+  const renderEstadoBadge = (cod_estado) => {
+    switch(cod_estado) {
+      case 1: return <span style={{ background: 'var(--warning)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Pendiente</span>;
+      case 2: return <span style={{ background: 'var(--primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>En Proceso</span>;
+      case 3: return <span style={{ background: 'var(--success)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Completado</span>;
+      default: return <span style={{ background: 'gray', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Desconocido</span>;
+    }
+  };
 
   return (
     <div>
@@ -132,54 +139,58 @@ function Dashboard() {
             icon="📦" 
           />
           <StatCard 
-            title={isAdminOrTecnico ? 'Total en Mantenimiento' : 'Mis Equipos en Mantenimiento'} 
-            value={stats.mantenimientos} 
+            title={isAdminOrTecnico ? 'Mantenimientos Activos' : 'Mis Tickets Activos'} 
+            value={stats.mantenimientosActivos} 
             colorClass="danger" 
             icon="🔧" 
           />
         </div>
 
         {/* Actividad Reciente */}
-        <div className="premium-card">
-          <div className="card-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>Últimos Mantenimientos</h3>
+        <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card-header" style={{ borderBottom: '1px solid var(--border)', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, color: 'var(--primary)' }}>Últimos Tickets de Mantenimiento</h3>
+            <button onClick={() => navigate('/mantenimientos')} className="premium-btn premium-btn-ghost" style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}>
+              Ver todos ➔
+            </button>
           </div>
           
           {isLoading ? (
-            <div style={{ padding: '1rem 0' }}>
+            <div style={{ padding: '1.5rem' }}>
               <div className="skeleton skeleton-text" style={{ height: '40px', marginBottom: '10px' }}></div>
               <div className="skeleton skeleton-text" style={{ height: '40px', marginBottom: '10px' }}></div>
               <div className="skeleton skeleton-text" style={{ height: '40px' }}></div>
             </div>
           ) : actividadReciente.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
-              No hay actividad reciente.
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-h)' }}>
+              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>📭</span>
+              No hay tickets de mantenimiento recientes.
             </p>
           ) : (
-            <div className="table-responsive">
-              <table className="table">
+            <div className="table-responsive" style={{ margin: 0 }}>
+              <table className="premium-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Ticket</th>
+                    <th>Equipo</th>
+                    <th>Falla Reportada</th>
                     <th>Estado</th>
-                    <th>Fecha Inicio</th>
+                    <th>Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
                   {actividadReciente.map(m => (
                     <tr key={m.cod_mantenimiento}>
-                      <td>#{m.cod_mantenimiento}</td>
-                      <td>
-                        <span className={`status-badge ${
-                          m.cod_estado_mantenimiento === 1 ? 'status-pending' :
-                          m.cod_estado_mantenimiento === 2 ? 'status-active' :
-                          'status-inactive'
-                        }`}>
-                          {m.cod_estado_mantenimiento === 1 ? 'Pendiente' :
-                           m.cod_estado_mantenimiento === 2 ? 'En Proceso' : 'Completado'}
-                        </span>
+                      <td style={{ color: "var(--primary)", fontWeight: 500 }}>#{m.cod_mantenimiento}</td>
+                      <td>{m.nombre_equipo || 'Equipo no asignado'}</td>
+                      <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-h)' }}>
+                        {m.descripcion_problema || <span style={{fontStyle: 'italic'}}>Sin descripción</span>}
                       </td>
-                      <td>{new Date(m.fecha_inicio_mantenimiento).toLocaleDateString()}</td>
+                      <td>{renderEstadoBadge(m.cod_estado_mantenimiento)}</td>
+                      <td>
+                        {new Date(m.fecha_inicio_mantenimiento).toLocaleDateString()}{' '}
+                        {m.hora_recibida ? <span style={{fontSize: '0.8rem', color: 'gray'}}>{m.hora_recibida.slice(0,5)}</span> : ''}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

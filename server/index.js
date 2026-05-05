@@ -133,15 +133,15 @@ app.post('/mantenimientos', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada } = req.body;
+      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, descripcion_problema } = req.body;
       
     const val = (v) => v === undefined ? null : v;
     
     const [result] = await conn.query(
       `INSERT INTO mantenimientos 
        (cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, descripcion_problema)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         val(cod_equipo), 
         val(cod_tipo_mantenimiento), 
@@ -150,7 +150,8 @@ app.post('/mantenimientos', async (req, res) => {
         val(fecha_inicio_mantenimiento), 
         val(hora_recibida), 
         val(fecha_fin_mantenimiento), 
-        val(hora_retirada)
+        val(hora_retirada),
+        val(descripcion_problema)
       ]
     );
     res.json({ id: result.insertId });
@@ -163,7 +164,7 @@ app.put('/mantenimientos/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     let { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
-      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, Hora_retirada } = req.body;
+      fecha_inicio_mantenimiento, hora_recibida, fecha_fin_mantenimiento, hora_retirada, Hora_retirada, descripcion_problema } = req.body;
       
     // mysql2 throws an error if undefined is passed to parameterized query
     // so we fallback to null if undefined
@@ -182,7 +183,7 @@ app.put('/mantenimientos/:id', async (req, res) => {
     await conn.query(
       `UPDATE mantenimientos SET
        cod_equipo=?, cod_tipo_mantenimiento=?, cod_usuario=?, cod_estado_mantenimiento=?,
-       fecha_inicio_mantenimiento=?, hora_recibida=?, fecha_fin_mantenimiento=?, hora_retirada=?
+       fecha_inicio_mantenimiento=?, hora_recibida=?, fecha_fin_mantenimiento=?, hora_retirada=?, descripcion_problema=?
        WHERE cod_mantenimiento=?`,
       [
         val(cod_equipo), 
@@ -193,6 +194,7 @@ app.put('/mantenimientos/:id', async (req, res) => {
         val(hora_recibida), 
         formatDate(fecha_fin_mantenimiento), 
         finalHoraRetirada, 
+        val(descripcion_problema),
         req.params.id
       ]
     );
