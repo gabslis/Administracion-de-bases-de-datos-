@@ -58,6 +58,9 @@ function Dashboard() {
           <button onClick={() => navigate('/usuarios')} className="premium-btn premium-btn-ghost">
             Gestión de Usuarios
           </button>
+          <button onClick={() => navigate('/prestamos')} className="premium-btn premium-btn-ghost">
+            Asignaciones / Préstamos
+          </button>
           <button onClick={handleLogout} className="premium-btn premium-btn-danger" style={{ padding: '0.5rem 1rem' }}>
             Cerrar sesión
           </button>

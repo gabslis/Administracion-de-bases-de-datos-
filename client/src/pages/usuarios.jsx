@@ -92,6 +92,9 @@ function Usuarios() {
           <button onClick={() => navigate("/dashboard")} className="premium-btn premium-btn-ghost">
             Volver al Dashboard
           </button>
+          <button onClick={() => navigate('/prestamos')} className="premium-btn premium-btn-ghost">
+            Asignaciones / Préstamos
+          </button>
           <button onClick={() => { setForm(vacio); setEditId(null); setMostrarForm(!mostrarForm); }}
             className="premium-btn premium-btn-primary">
             + Agregar Usuario

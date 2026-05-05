@@ -142,6 +142,23 @@ app.delete('/mantenimientos/:id', async (req, res) => {
 });
 
 
+// AULAS Y ACCESORIOS (para selects en prestamos)
+app.get('/aulas', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM aulas');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+
+app.get('/accesorios', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM accesorios');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+
 // PRESTAMOS
 
 //obtener prestamos (Q Queria hacer the dudcito)
