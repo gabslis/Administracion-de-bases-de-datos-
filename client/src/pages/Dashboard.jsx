@@ -41,40 +41,53 @@ function Dashboard() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* NAVBAR */}
-      <div style={{ background: '#001529', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ color: 'white', margin: 0 }}>🖥️ Sistema de Préstamos</h2>
+      <div style={{ 
+        background: 'var(--surface)', 
+        padding: '1rem 2rem', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <h2 style={{ color: 'var(--primary)', margin: 0 }}>🖥️ Préstamos Tech</h2>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'white' }}>👤 {usuario?.nombre}</span>
-          <button onClick={() => navigate('/usuarios')} style={{ padding: '0.4rem 1rem', background: '#1890ff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Usuarios
+          <span style={{ color: 'var(--text-h)', fontWeight: 500 }}>👤 {usuario?.nombre}</span>
+          <button onClick={() => navigate('/usuarios')} className="premium-btn premium-btn-ghost">
+            Gestión de Usuarios
           </button>
-          <button onClick={handleLogout} style={{ padding: '0.4rem 1rem', background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={handleLogout} className="premium-btn premium-btn-danger" style={{ padding: '0.5rem 1rem' }}>
             Cerrar sesión
           </button>
         </div>
       </div>
 
       {/* CONTENIDO */}
-      <div style={{ padding: '2rem' }}>
-        <h3>Bienvenido, {usuario?.nombre} 👋</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '1rem' }}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#1890ff', margin: 0 }}>{stats.equipos}</h1>
-            <p>💻 Equipos</p>
+      <div style={{ padding: '2rem', flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Bienvenido, {usuario?.nombre} 👋</h3>
+        
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '1.5rem' 
+        }}>
+          <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+            <h1 style={{ color: 'var(--primary)', margin: '0 0 0.5rem 0', fontSize: '3rem' }}>{stats.equipos}</h1>
+            <p style={{ color: 'var(--text)', fontWeight: 500 }}>💻 Equipos</p>
           </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#52c41a', margin: 0 }}>{stats.usuarios}</h1>
-            <p>👥 Usuarios</p>
+          <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+            <h1 style={{ color: 'var(--success)', margin: '0 0 0.5rem 0', fontSize: '3rem' }}>{stats.usuarios}</h1>
+            <p style={{ color: 'var(--text)', fontWeight: 500 }}>👥 Usuarios</p>
           </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#faad14', margin: 0 }}>{stats.prestamos}</h1>
-            <p>📦 Préstamos</p>
+          <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+            <h1 style={{ color: 'var(--warning)', margin: '0 0 0.5rem 0', fontSize: '3rem' }}>{stats.prestamos}</h1>
+            <p style={{ color: 'var(--text)', fontWeight: 500 }}>📦 Préstamos</p>
           </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#ff4d4f', margin: 0 }}>{stats.mantenimientos}</h1>
-            <p>🔧 Mantenimientos</p>
+          <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+            <h1 style={{ color: 'var(--danger)', margin: '0 0 0.5rem 0', fontSize: '3rem' }}>{stats.mantenimientos}</h1>
+            <p style={{ color: 'var(--text)', fontWeight: 500 }}>🔧 Mantenimientos</p>
           </div>
         </div>
       </div>

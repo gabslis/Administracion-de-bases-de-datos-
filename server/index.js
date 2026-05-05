@@ -189,6 +189,17 @@ app.delete('/prestamos/:id', async (req, res) => {
 });
 
 
+// ══════════════════════════════
+// ROLES
+// ══════════════════════════════
+app.get('/roles', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM roles');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+
 // USUARIOS
 //si
 // ══════════════════════════════
