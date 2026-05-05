@@ -76,33 +76,17 @@ function Usuarios() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: 'flex', flexDirection: 'column' }}>
-      {/* NAVBAR */}
-      <div style={{ 
-        background: 'var(--surface)', 
-        padding: '1rem 2rem', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <h2 style={{ color: 'var(--primary)', margin: 0 }}>👥 Gestión de Usuarios</h2>
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button onClick={() => navigate("/dashboard")} className="premium-btn premium-btn-ghost">
-            Volver al Dashboard
-          </button>
-          <button onClick={() => navigate('/prestamos')} className="premium-btn premium-btn-ghost">
-            Asignaciones / Préstamos
-          </button>
+    <div>
+      <div style={{ padding: "2rem", maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ color: 'var(--primary)', margin: 0 }}>👥 Gestión de Usuarios</h2>
           <button onClick={() => { setForm(vacio); setEditId(null); setMostrarForm(!mostrarForm); }}
             className="premium-btn premium-btn-primary">
             + Agregar Usuario
           </button>
         </div>
-      </div>
 
-      <div style={{ padding: "2rem", flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         {mostrarForm && (
           <div className="premium-card" style={{ marginBottom: "2rem" }}>
             <h3 style={{ color: "var(--primary)", marginTop: 0, marginBottom: '1.5rem' }}>
@@ -171,7 +155,7 @@ function Usuarios() {
                     <td>{u.correo}</td>
                     <td>
                       <span style={{ background: 'var(--bg)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', border: '1px solid var(--border)' }}>
-                        Rol {u.cod_rol}
+                        {roles.find(r => r.cod_rol === u.cod_rol)?.nombre_rol || `Rol ${u.cod_rol}`}
                       </span>
                     </td>
                     <td>{u.fecha_ingreso?.split("T")[0]}</td>

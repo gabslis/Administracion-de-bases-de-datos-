@@ -88,22 +88,11 @@ function Prestamos() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: 'flex', flexDirection: 'column' }}>
-      {/* NAVBAR */}
-      <div style={{ 
-        background: 'var(--surface)', 
-        padding: '1rem 2rem', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <h2 style={{ color: 'var(--primary)', margin: 0 }}>📦 Asignaciones (Préstamos)</h2>
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button onClick={() => navigate("/dashboard")} className="premium-btn premium-btn-ghost">
-            Volver al Dashboard
-          </button>
+    <div>
+      <div style={{ padding: "2rem", maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ color: 'var(--primary)', margin: 0 }}>📦 Asignaciones (Préstamos)</h2>
           {isAdminOrTecnico && (
             <button onClick={() => { setForm(vacio); setMostrarForm(!mostrarForm); }}
               className="premium-btn premium-btn-primary">
@@ -111,9 +100,6 @@ function Prestamos() {
             </button>
           )}
         </div>
-      </div>
-
-      <div style={{ padding: "2rem", flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         
         {!isAdminOrTecnico && (
           <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: 'var(--radius)', border: '1px solid var(--primary)' }}>

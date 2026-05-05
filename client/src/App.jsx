@@ -3,10 +3,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Usuarios from './pages/usuarios';
 import Prestamos from './pages/Prestamos';
+import Layout from './components/Layout';
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" />;
+  return token ? <Layout>{children}</Layout> : <Navigate to="/login" />;
 }
 
 function App() {

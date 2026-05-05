@@ -46,45 +46,10 @@ function Dashboard() {
     if (usuario) fetchStats();
   }, [isAdminOrTecnico, usuario]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    navigate('/login');
-  };
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* NAVBAR */}
-      <div style={{ 
-        background: 'var(--surface)', 
-        padding: '1rem 2rem', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <h2 style={{ color: 'var(--primary)', margin: 0 }}>🖥️ Préstamos Tech</h2>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-h)', fontWeight: 500 }}>👤 {usuario?.nombre}</span>
-          
-          {isAdminOrTecnico && (
-            <button onClick={() => navigate('/usuarios')} className="premium-btn premium-btn-ghost">
-              Gestión de Usuarios
-            </button>
-          )}
-          
-          <button onClick={() => navigate('/prestamos')} className="premium-btn premium-btn-ghost">
-            Asignaciones / Préstamos
-          </button>
-          <button onClick={handleLogout} className="premium-btn premium-btn-danger" style={{ padding: '0.5rem 1rem' }}>
-            Cerrar sesión
-          </button>
-        </div>
-      </div>
-
+    <div>
       {/* CONTENIDO */}
-      <div style={{ padding: '2rem', flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+      <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Bienvenido, {usuario?.nombre} 👋</h3>
         
         <div style={{ 
