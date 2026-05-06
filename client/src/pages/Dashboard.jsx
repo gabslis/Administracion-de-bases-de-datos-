@@ -5,15 +5,21 @@ import api from '../api/axios';
 function Dashboard() {
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem('usuario'));
+  const isAdminOrTecnico = usuario?.cod_rol === 1 || usuario?.cod_rol === 4;
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     equipos: 0,
     usuarios: 0,
     prestamos: 0,
-    mantenimientos: 0,
+    mantenimientosActivos: 0,
   });
+  
+  const [actividadReciente, setActividadReciente] = useState([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDatos = async () => {
+      setIsLoading(true);
       try {
         const [equipos, usuarios, prestamos, mantenimientos] = await Promise.all([
           api.get('/equipos'),
@@ -21,62 +27,178 @@ function Dashboard() {
           api.get('/prestamos'),
           api.get('/mantenimientos'),
         ]);
+        
+        let prestamosList = prestamos.data;
+        let mantenimientosList = mantenimientos.data;
+
+        // Si no es Admin o Técnico, filtrar por su ID de usuario
+        if (!isAdminOrTecnico) {
+          prestamosList = prestamosList.filter(p => p.cod_usuario === usuario?.cod_usuario);
+          mantenimientosList = mantenimientosList.filter(m => m.cod_usuario === usuario?.cod_usuario);
+        }
+
         setStats({
           equipos: equipos.data.length,
           usuarios: usuarios.data.length,
-          prestamos: prestamos.data.length,
-          mantenimientos: mantenimientos.data.length,
+          prestamos: prestamosList.length,
+          // Solo contar los tickets Pendientes(1) y En Proceso(2)
+          mantenimientosActivos: mantenimientosList.filter(m => m.cod_estado_mantenimiento === 1 || m.cod_estado_mantenimiento === 2).length,
         });
+
+        // Configurar actividad reciente (últimos 5 mantenimientos)
+        const ultimosMantenimientos = [...mantenimientosList]
+          .sort((a, b) => b.cod_mantenimiento - a.cod_mantenimiento)
+          .slice(0, 5);
+        
+        setActividadReciente(ultimosMantenimientos);
       } catch (err) {
         console.error(err);
+      } finally {
+        setTimeout(() => setIsLoading(false), 500);
       }
     };
-    fetchStats();
+    if (usuario) fetchDatos();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    navigate('/login');
+  const StatCard = ({ title, value, colorClass, icon }) => (
+    <div className="premium-card" style={{ textAlign: 'center', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {isLoading ? (
+        <>
+          <div className="skeleton skeleton-title"></div>
+          <div className="skeleton skeleton-text" style={{ width: '80%' }}></div>
+        </>
+      ) : (
+        <>
+          <h1 style={{ color: `var(--${colorClass})`, margin: '0 0 0.5rem 0', fontSize: '3rem' }}>{value}</h1>
+          <p style={{ color: 'var(--text)', fontWeight: 500 }}>{icon} {title}</p>
+        </>
+      )}
+    </div>
+  );
+
+  const renderEstadoBadge = (cod_estado) => {
+    switch(cod_estado) {
+      case 1: return <span style={{ background: 'var(--warning)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Pendiente</span>;
+      case 2: return <span style={{ background: 'var(--primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>En Proceso</span>;
+      case 3: return <span style={{ background: 'var(--success)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Completado</span>;
+      default: return <span style={{ background: 'gray', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', fontWeight: 'bold' }}>Desconocido</span>;
+    }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f5' }}>
-      {/* NAVBAR */}
-      <div style={{ background: '#001529', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ color: 'white', margin: 0 }}>🖥️ Sistema de Préstamos</h2>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: 'white' }}>👤 {usuario?.nombre}</span>
-          <button onClick={() => navigate('/usuarios')} style={{ padding: '0.4rem 1rem', background: '#1890ff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Usuarios
-          </button>
-          <button onClick={handleLogout} style={{ padding: '0.4rem 1rem', background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Cerrar sesión
-          </button>
+    <div>
+      <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          Bienvenido, {usuario?.nombre} 👋
+        </h3>
+        
+        {/* Acciones Rápidas */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+          {isAdminOrTecnico ? (
+            <>
+              <button className="quick-action-btn" onClick={() => navigate('/prestamos')}>
+                📦 Asignar Equipo
+              </button>
+              <button className="quick-action-btn" onClick={() => navigate('/usuarios')}>
+                👥 Nuevo Usuario
+              </button>
+              <button className="quick-action-btn" onClick={() => navigate('/mantenimientos')}>
+                🔧 Ver Tickets
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="quick-action-btn" onClick={() => navigate('/prestamos')}>
+                📦 Mis Equipos
+              </button>
+              <button className="quick-action-btn" onClick={() => navigate('/mantenimientos')}>
+                🔧 Solicitar Mantenimiento
+              </button>
+            </>
+          )}
         </div>
-      </div>
+        
+        {/* Estadísticas */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '3rem'
+        }}>
+          {isAdminOrTecnico && (
+            <>
+              <StatCard title="Total Equipos" value={stats.equipos} colorClass="primary" icon="💻" />
+              <StatCard title="Total Usuarios" value={stats.usuarios} colorClass="success" icon="👥" />
+            </>
+          )}
+          
+          <StatCard 
+            title={isAdminOrTecnico ? 'Total Préstamos' : 'Mis Equipos Asignados'} 
+            value={stats.prestamos} 
+            colorClass="warning" 
+            icon="📦" 
+          />
+          <StatCard 
+            title={isAdminOrTecnico ? 'Mantenimientos Activos' : 'Mis Tickets Activos'} 
+            value={stats.mantenimientosActivos} 
+            colorClass="danger" 
+            icon="🔧" 
+          />
+        </div>
 
-      {/* CONTENIDO */}
-      <div style={{ padding: '2rem' }}>
-        <h3>Bienvenido, {usuario?.nombre} 👋</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '1rem' }}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#1890ff', margin: 0 }}>{stats.equipos}</h1>
-            <p>💻 Equipos</p>
+        {/* Actividad Reciente */}
+        <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card-header" style={{ borderBottom: '1px solid var(--border)', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, color: 'var(--primary)' }}>Últimos Tickets de Mantenimiento</h3>
+            <button onClick={() => navigate('/mantenimientos')} className="premium-btn premium-btn-ghost" style={{ padding: '0.4rem 0.8rem', fontSize: '0.9rem' }}>
+              Ver todos ➔
+            </button>
           </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#52c41a', margin: 0 }}>{stats.usuarios}</h1>
-            <p>👥 Usuarios</p>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#faad14', margin: 0 }}>{stats.prestamos}</h1>
-            <p>📦 Préstamos</p>
-          </div>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h1 style={{ color: '#ff4d4f', margin: 0 }}>{stats.mantenimientos}</h1>
-            <p>🔧 Mantenimientos</p>
-          </div>
+          
+          {isLoading ? (
+            <div style={{ padding: '1.5rem' }}>
+              <div className="skeleton skeleton-text" style={{ height: '40px', marginBottom: '10px' }}></div>
+              <div className="skeleton skeleton-text" style={{ height: '40px', marginBottom: '10px' }}></div>
+              <div className="skeleton skeleton-text" style={{ height: '40px' }}></div>
+            </div>
+          ) : actividadReciente.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-h)' }}>
+              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>📭</span>
+              No hay tickets de mantenimiento recientes.
+            </p>
+          ) : (
+            <div className="table-responsive" style={{ margin: 0 }}>
+              <table className="premium-table">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Equipo</th>
+                    <th>Falla Reportada</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {actividadReciente.map(m => (
+                    <tr key={m.cod_mantenimiento}>
+                      <td style={{ color: "var(--primary)", fontWeight: 500 }}>#{m.cod_mantenimiento}</td>
+                      <td>{m.nombre_equipo || 'Equipo no asignado'}</td>
+                      <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-h)' }}>
+                        {m.descripcion_problema || <span style={{fontStyle: 'italic'}}>Sin descripción</span>}
+                      </td>
+                      <td>{renderEstadoBadge(m.cod_estado_mantenimiento)}</td>
+                      <td>
+                        {new Date(m.fecha_inicio_mantenimiento).toLocaleDateString()}{' '}
+                        {m.hora_recibida ? <span style={{fontSize: '0.8rem', color: 'gray'}}>{m.hora_recibida.slice(0,5)}</span> : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+        
       </div>
     </div>
   );

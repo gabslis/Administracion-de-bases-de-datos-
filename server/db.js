@@ -1,19 +1,18 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// ── INSTANCIAS ──
 const instances = {
   primary: {
-    host: process.env.DB_HOST_PRIMARY,
-    port: process.env.DB_PORT_PRIMARY,
+    host: process.env.DB_HOST_PRIMARY || '127.0.0.1',
+    port: process.env.DB_PORT_PRIMARY || 3306,
   },
   mirror: {
-    host: process.env.DB_HOST_MIRROR,
-    port: process.env.DB_PORT_MIRROR,
+    host: process.env.DB_HOST_MIRROR || process.env.DB_HOST_PRIMARY || '127.0.0.1',
+    port: process.env.DB_PORT_MIRROR || process.env.DB_PORT_PRIMARY || 3306,
   },
   arbiter: {
-    host: process.env.DB_HOST_ARBITER,
-    port: process.env.DB_PORT_ARBITER,
+    host: process.env.DB_HOST_ARBITER || process.env.DB_HOST_PRIMARY || '127.0.0.1',
+    port: process.env.DB_PORT_ARBITER || process.env.DB_PORT_PRIMARY || 3306,
   },
 };
 
