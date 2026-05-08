@@ -13,6 +13,8 @@ function Dashboard() {
     usuarios: 0,
     prestamos: 0,
     mantenimientosActivos: 0,
+    incidencias: 0,
+    sancionesActivas: 0,
   });
   
   const [actividadReciente, setActividadReciente] = useState([]);
@@ -21,11 +23,13 @@ function Dashboard() {
     const fetchDatos = async () => {
       setIsLoading(true);
       try {
-        const [equipos, usuarios, prestamos, mantenimientos] = await Promise.all([
+        const [equipos, usuarios, prestamos, mantenimientos, incidencias, sanciones] = await Promise.all([
           api.get('/equipos'),
           api.get('/usuarios'),
           api.get('/prestamos'),
           api.get('/mantenimientos'),
+          api.get('/incidencias'),
+          api.get('/sanciones'),
         ]);
         
         let prestamosList = prestamos.data;
@@ -43,6 +47,8 @@ function Dashboard() {
           prestamos: prestamosList.length,
           // Solo contar los tickets Pendientes(1) y En Proceso(2)
           mantenimientosActivos: mantenimientosList.filter(m => m.cod_estado_mantenimiento === 1 || m.cod_estado_mantenimiento === 2).length,
+          incidencias: incidencias.data.length,
+          sancionesActivas: sanciones.data.length,
         });
 
         // Configurar actividad reciente (últimos 5 mantenimientos)
@@ -129,6 +135,8 @@ function Dashboard() {
             <>
               <StatCard title="Total Equipos" value={stats.equipos} colorClass="primary" icon="💻" />
               <StatCard title="Total Usuarios" value={stats.usuarios} colorClass="success" icon="👥" />
+              <StatCard title="Incidencias" value={stats.incidencias} colorClass="warning" icon="🚨" />
+              <StatCard title="Sanciones Activas" value={stats.sancionesActivas} colorClass="danger" icon="⚖️" />
             </>
           )}
           

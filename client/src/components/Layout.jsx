@@ -44,6 +44,22 @@ function Layout({ children }) {
           )}
 
           <NavLink 
+            to="/equipos" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">💻</span>
+            <span className="sidebar-text">Inventario</span>
+          </NavLink>
+
+          <NavLink 
+            to="/ubicaciones" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">🏫</span>
+            <span className="sidebar-text">Ubicaciones</span>
+          </NavLink>
+
+          <NavLink 
             to="/prestamos" 
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
@@ -58,6 +74,34 @@ function Layout({ children }) {
             <span className="sidebar-icon">🔧</span>
             <span className="sidebar-text">Mantenimientos</span>
           </NavLink>
+
+          <NavLink 
+            to="/incidencias" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">🚨</span>
+            <span className="sidebar-text">Incidencias</span>
+          </NavLink>
+
+          {isAdminOrTecnico && (
+            <NavLink 
+              to="/sanciones" 
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">⚖️</span>
+              <span className="sidebar-text">Sanciones</span>
+            </NavLink>
+          )}
+
+          {isAdminOrTecnico && (
+            <NavLink 
+              to="/configuracion" 
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">⚙️</span>
+              <span className="sidebar-text">Ajustes</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="sidebar-footer">

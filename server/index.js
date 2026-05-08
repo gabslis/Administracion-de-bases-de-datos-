@@ -259,6 +259,13 @@ app.post('/prestamos', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada } = req.body;
+    
+    // Validar si el usuario tiene una sanción
+    const [sanciones] = await conn.query('SELECT * FROM sanciones WHERE cod_usuario = ?', [cod_usuario]);
+    if (sanciones.length > 0) {
+      return res.status(403).json({ error: 'El usuario tiene una sanción activa y no puede realizar préstamos.' });
+    }
+
     const [result] = await conn.query(
       `INSERT INTO prestamos 
        (cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada)
@@ -266,6 +273,8 @@ app.post('/prestamos', async (req, res) => {
       [cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada]
     );
     res.json({ id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
 //actualizar prestamos (hey hey hey ya no explicare  ya se entiende lo que hace cada cosa
@@ -343,6 +352,431 @@ app.delete('/usuarios/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM usuarios WHERE cod_usuario=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// MARCAS
+// ══════════════════════════════
+app.get('/marcas', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM marcas');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/marcas', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_marca } = req.body;
+    const [result] = await conn.query('INSERT INTO marcas (nombre_marca) VALUES (?)', [nombre_marca]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/marcas/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_marca } = req.body;
+    await conn.query('UPDATE marcas SET nombre_marca=? WHERE cod_marca=?', [nombre_marca, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/marcas/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM marcas WHERE cod_marca=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// ESTADO EQUIPO
+// ══════════════════════════════
+app.get('/estado_equipo', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM estado_equipo');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/estado_equipo', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_equipo } = req.body;
+    const [result] = await conn.query('INSERT INTO estado_equipo (tipo_estado_equipo) VALUES (?)', [tipo_estado_equipo]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/estado_equipo/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_equipo } = req.body;
+    await conn.query('UPDATE estado_equipo SET tipo_estado_equipo=? WHERE cod_estado_equipo=?', [tipo_estado_equipo, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/estado_equipo/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM estado_equipo WHERE cod_estado_equipo=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// INCIDENCIAS
+// ══════════════════════════════
+app.get('/incidencias', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const query = `
+      SELECT i.*, 
+             g.tipo_gravedad_incidencia
+      FROM incidencias i
+      LEFT JOIN gravedad_incidencia g ON i.cod_gravedad_incidencia = g.cod_gravedad_incidencia
+    `;
+    const [rows] = await conn.query(query);
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/incidencias', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_prestamo, descripcion, fecha_incidencia, cod_gravedad_incidencia } = req.body;
+    
+    // Format dates to YYYY-MM-DD
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
+      return dateStr;
+    };
+
+    const [result] = await conn.query(
+      'INSERT INTO incidencias (cod_prestamo, descripcion, fecha_incidencia, cod_gravedad_incidencia) VALUES (?, ?, ?, ?)', 
+      [cod_prestamo, descripcion, formatDate(fecha_incidencia), cod_gravedad_incidencia]
+    );
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/incidencias/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_prestamo, descripcion, fecha_incidencia, cod_gravedad_incidencia } = req.body;
+    
+    // Format dates to YYYY-MM-DD
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
+      return dateStr;
+    };
+
+    await conn.query(
+      'UPDATE incidencias SET cod_prestamo=?, descripcion=?, fecha_incidencia=?, cod_gravedad_incidencia=? WHERE cod_incidencia=?', 
+      [cod_prestamo, descripcion, formatDate(fecha_incidencia), cod_gravedad_incidencia, req.params.id]
+    );
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/incidencias/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM incidencias WHERE cod_incidencia=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// GRAVEDAD INCIDENCIA
+// ══════════════════════════════
+app.get('/gravedad_incidencia', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM gravedad_incidencia');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/gravedad_incidencia', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_gravedad_incidencia } = req.body;
+    const [result] = await conn.query('INSERT INTO gravedad_incidencia (tipo_gravedad_incidencia) VALUES (?)', [tipo_gravedad_incidencia]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/gravedad_incidencia/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_gravedad_incidencia } = req.body;
+    await conn.query('UPDATE gravedad_incidencia SET tipo_gravedad_incidencia=? WHERE cod_gravedad_incidencia=?', [tipo_gravedad_incidencia, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/gravedad_incidencia/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM gravedad_incidencia WHERE cod_gravedad_incidencia=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// SANCIONES
+// ══════════════════════════════
+app.get('/sanciones', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const query = `
+      SELECT s.*, 
+             u.nombre as nombre_usuario,
+             e.nombre_equipo
+      FROM sanciones s
+      LEFT JOIN usuarios u ON s.cod_usuario = u.cod_usuario
+      LEFT JOIN equipos e ON s.cod_equipo = e.cod_equipo
+    `;
+    const [rows] = await conn.query(query);
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/sanciones', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_usuario, cod_equipo, motivo, fecha_sancion } = req.body;
+    
+    // Format dates to YYYY-MM-DD
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
+      return dateStr;
+    };
+
+    const [result] = await conn.query('INSERT INTO sanciones (cod_usuario, cod_equipo, motivo, fecha_sancion) VALUES (?, ?, ?, ?)', [cod_usuario, cod_equipo, motivo, formatDate(fecha_sancion)]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/sanciones/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_usuario, cod_equipo, motivo, fecha_sancion } = req.body;
+    
+    // Format dates to YYYY-MM-DD
+    const formatDate = (dateStr) => {
+      if (!dateStr) return null;
+      if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
+      return dateStr;
+    };
+
+    await conn.query('UPDATE sanciones SET cod_usuario=?, cod_equipo=?, motivo=?, fecha_sancion=? WHERE cod_sancion=?', [cod_usuario, cod_equipo, motivo, formatDate(fecha_sancion), req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/sanciones/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM sanciones WHERE cod_sancion=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// EDIFICIOS
+// ══════════════════════════════
+app.get('/edificios', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM edificios');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/edificios', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_edificio } = req.body;
+    const [result] = await conn.query('INSERT INTO edificios (nombre_edificio) VALUES (?)', [nombre_edificio]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/edificios/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_edificio } = req.body;
+    await conn.query('UPDATE edificios SET nombre_edificio=? WHERE cod_edificio=?', [nombre_edificio, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/edificios/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM edificios WHERE cod_edificio=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// AULAS (POST, PUT, DELETE)
+// ══════════════════════════════
+app.post('/aulas', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_aula, cod_edificio } = req.body;
+    const [result] = await conn.query('INSERT INTO aulas (nombre_aula, cod_edificio) VALUES (?, ?)', [nombre_aula, cod_edificio]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/aulas/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_aula, cod_edificio } = req.body;
+    await conn.query('UPDATE aulas SET nombre_aula=?, cod_edificio=? WHERE cod_aula=?', [nombre_aula, cod_edificio, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/aulas/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM aulas WHERE cod_aula=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// ACCESORIOS (POST, PUT, DELETE)
+// ══════════════════════════════
+app.post('/accesorios', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_marca, nombre_accesorio } = req.body;
+    const [result] = await conn.query('INSERT INTO accesorios (cod_marca, nombre_accesorio) VALUES (?, ?)', [cod_marca, nombre_accesorio]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/accesorios/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { cod_marca, nombre_accesorio } = req.body;
+    await conn.query('UPDATE accesorios SET cod_marca=?, nombre_accesorio=? WHERE cod_accesorio=?', [cod_marca, nombre_accesorio, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/accesorios/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM accesorios WHERE cod_accesorio=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// ROLES (POST, PUT, DELETE)
+// ══════════════════════════════
+app.post('/roles', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_rol } = req.body;
+    const [result] = await conn.query('INSERT INTO roles (nombre_rol) VALUES (?)', [nombre_rol]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/roles/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { nombre_rol } = req.body;
+    await conn.query('UPDATE roles SET nombre_rol=? WHERE cod_rol=?', [nombre_rol, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/roles/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM roles WHERE cod_rol=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// ESTADO USUARIO
+// ══════════════════════════════
+app.get('/estado_usuario', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT * FROM estado_usuario');
+    res.json(rows);
+  } finally { conn.release(); }
+});
+app.post('/estado_usuario', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_usuario } = req.body;
+    const [result] = await conn.query('INSERT INTO estado_usuario (tipo_estado_usuario) VALUES (?)', [tipo_estado_usuario]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/estado_usuario/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_usuario } = req.body;
+    await conn.query('UPDATE estado_usuario SET tipo_estado_usuario=? WHERE cod_estado_usuario=?', [tipo_estado_usuario, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/estado_usuario/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM estado_usuario WHERE cod_estado_usuario=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// ESTADO MANTENIMIENTO (POST, PUT, DELETE)
+// ══════════════════════════════
+app.post('/estado_mantenimiento', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_mantenimiento } = req.body;
+    const [result] = await conn.query('INSERT INTO estado_mantenimiento (tipo_estado_mantenimiento) VALUES (?)', [tipo_estado_mantenimiento]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/estado_mantenimiento/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_estado_mantenimiento } = req.body;
+    await conn.query('UPDATE estado_mantenimiento SET tipo_estado_mantenimiento=? WHERE cod_estado_mantenimiento=?', [tipo_estado_mantenimiento, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/estado_mantenimiento/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM estado_mantenimiento WHERE cod_estado_mantenimiento=?', [req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+
+// ══════════════════════════════
+// TIPO MANTENIMIENTO (POST, PUT, DELETE)
+// ══════════════════════════════
+app.post('/tipo_mantenimiento', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_mantenimiento } = req.body;
+    const [result] = await conn.query('INSERT INTO tipo_mantenimiento (tipo_mantenimiento) VALUES (?)', [tipo_mantenimiento]);
+    res.json({ id: result.insertId });
+  } finally { conn.release(); }
+});
+app.put('/tipo_mantenimiento/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    const { tipo_mantenimiento } = req.body;
+    await conn.query('UPDATE tipo_mantenimiento SET tipo_mantenimiento=? WHERE cod_tipo_mantenimiento=?', [tipo_mantenimiento, req.params.id]);
+    res.json({ ok: true });
+  } finally { conn.release(); }
+});
+app.delete('/tipo_mantenimiento/:id', async (req, res) => {
+  const conn = await getWriteConnection();
+  try {
+    await conn.query('DELETE FROM tipo_mantenimiento WHERE cod_tipo_mantenimiento=?', [req.params.id]);
     res.json({ ok: true });
   } finally { conn.release(); }
 });
