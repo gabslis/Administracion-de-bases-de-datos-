@@ -259,12 +259,6 @@ app.post('/prestamos', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada } = req.body;
-    
-    // Validar si el usuario tiene una sanción
-    const [sanciones] = await conn.query('SELECT * FROM sanciones WHERE cod_usuario = ?', [cod_usuario]);
-    if (sanciones.length > 0) {
-      return res.status(403).json({ error: 'El usuario tiene una sanción activa y no puede realizar préstamos.' });
-    }
 
     const [result] = await conn.query(
       `INSERT INTO prestamos 
@@ -277,6 +271,7 @@ app.post('/prestamos', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
+
 //actualizar prestamos (hey hey hey ya no explicare  ya se entiende lo que hace cada cosa
 app.put('/prestamos/:id', async (req, res) => {
   const conn = await getWriteConnection();
@@ -543,15 +538,25 @@ app.post('/sanciones', async (req, res) => {
   try {
     const { cod_usuario, cod_equipo, motivo, fecha_sancion } = req.body;
     
-    // Format dates to YYYY-MM-DD
     const formatDate = (dateStr) => {
       if (!dateStr) return null;
       if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
       return dateStr;
     };
 
-    const [result] = await conn.query('INSERT INTO sanciones (cod_usuario, cod_equipo, motivo, fecha_sancion) VALUES (?, ?, ?, ?)', [cod_usuario, cod_equipo, motivo, formatDate(fecha_sancion)]);
+    const [result] = await conn.query(
+      'INSERT INTO sanciones (cod_usuario, cod_equipo, motivo, fecha_sancion) VALUES (?, ?, ?, ?)',
+      [cod_usuario, cod_equipo || null, motivo, formatDate(fecha_sancion)]
+    );
+
+    // Si la sanción implica un equipo, marcarlo como Inactivo automáticamente
+    if (cod_equipo) {
+      await conn.query('UPDATE equipos SET cod_estado_equipo = 2 WHERE cod_equipo = ?', [cod_equipo]);
+    }
+
     res.json({ id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
 app.put('/sanciones/:id', async (req, res) => {
@@ -573,8 +578,34 @@ app.put('/sanciones/:id', async (req, res) => {
 app.delete('/sanciones/:id', async (req, res) => {
   const conn = await getWriteConnection();
   try {
+    // Obtener el equipo asociado antes de borrar para restaurarlo
+    const [rows] = await conn.query('SELECT cod_equipo FROM sanciones WHERE cod_sancion = ?', [req.params.id]);
+    
     await conn.query('DELETE FROM sanciones WHERE cod_sancion=?', [req.params.id]);
+
+    // Si la sanción tenía un equipo asociado, restaurarlo a Activo
+    if (rows.length > 0 && rows[0].cod_equipo) {
+      await conn.query('UPDATE equipos SET cod_estado_equipo = 1 WHERE cod_equipo = ?', [rows[0].cod_equipo]);
+    }
+
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally { conn.release(); }
+});
+
+// Consultar sanciones de un usuario específico (para que el docente vea las suyas)
+app.get('/sanciones/usuario/:id', async (req, res) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query(
+      `SELECT s.*, e.nombre_equipo, e.serial
+       FROM sanciones s
+       LEFT JOIN equipos e ON s.cod_equipo = e.cod_equipo
+       WHERE s.cod_usuario = ?`,
+      [req.params.id]
+    );
+    res.json(rows);
   } finally { conn.release(); }
 });
 

@@ -20,8 +20,8 @@ function Login() {
     if (!isLogin) {
       // Fetch roles for registration
       api.get('/roles').then(res => {
-        // Exclude Administrador (cod_rol === 1)
-        const allowedRoles = res.data.filter(r => r.cod_rol !== 1);
+        // Excluir Administrador (1) y Técnico (4) del auto-registro
+        const allowedRoles = res.data.filter(r => r.cod_rol !== 1 && r.cod_rol !== 4);
         setRoles(allowedRoles);
         if (allowedRoles.length > 0) {
           setCodRol(allowedRoles[0].cod_rol);
@@ -148,8 +148,6 @@ function Login() {
             className="premium-btn premium-btn-ghost" 
             onClick={() => {
               setIsLogin(!isLogin);
-              setError('');
-              setSuccess('');
             }}
             style={{ width: '100%' }}
           >

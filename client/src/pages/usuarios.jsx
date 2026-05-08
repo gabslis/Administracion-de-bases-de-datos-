@@ -1,41 +1,59 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
 
-const vacio = { nombre: "", cod_rol: "", correo: "", password: "", fecha_ingreso: "", cod_estado_usuario: "" };
+const vacio = { nombre: "", cod_rol: "", correo: "", password: "", fecha_ingreso: "", cod_estado_usuario: "1" };
 
 function Usuarios() {
-  const navigate = useNavigate();
+  const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
+  const isAdmin = usuarioActual?.cod_rol === 1;
+
   const [usuarios, setUsuarios] = useState([]);
   const [form, setForm] = useState(vacio);
   const [editId, setEditId] = useState(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [roles, setRoles] = useState([]);
+  const [estadosList, setEstadosList] = useState([]);
 
   const cargar = async () => {
     try {
       const res = await api.get("/usuarios");
       setUsuarios(res.data);
     } catch(err) {
-      console.error(err);
       toast.error("Error al cargar la lista de usuarios");
     }
   };
 
-  const cargarRoles = async () => {
+  const cargarCatalogos = async () => {
     try {
-      const res = await api.get("/roles");
-      setRoles(res.data);
+      const [rolesRes, estadosRes] = await Promise.all([
+        api.get("/roles"),
+        api.get("/estado_usuario")
+      ]);
+      setRoles(rolesRes.data);
+      setEstadosList(estadosRes.data);
     } catch (err) {
-      console.error("No se pudieron cargar los roles", err);
+      console.error("Error cargando catálogos", err);
     }
   };
 
   useEffect(() => { 
     cargar(); 
-    cargarRoles();
+    cargarCatalogos();
   }, []);
+
+  // Solo el Administrador puede gestionar usuarios
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center' }}>
+        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🔒</span>
+        <h3>Acceso restringido</h3>
+        <p style={{ color: 'var(--text-h)' }}>
+          Solo los <strong>Administradores</strong> pueden gestionar usuarios del sistema.
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,6 +98,8 @@ function Usuarios() {
     }
   };
 
+  const getNombreRol = (cod) => roles.find(r => r.cod_rol === cod)?.nombre_rol || `Rol ${cod}`;
+
   return (
     <div>
       <div style={{ padding: "2rem", maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
@@ -107,27 +127,32 @@ function Usuarios() {
                 <input className="premium-input" type="email" value={form.correo} onChange={e => setForm({...form, correo: e.target.value})} required />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Contraseña {editId && "(Dejar en blanco para no cambiar)"}</label>
+                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>
+                  Contraseña {editId && <span style={{ fontWeight: 400, color: 'var(--text-h)' }}>(vacío = no cambiar)</span>}
+                </label>
                 <input className="premium-input" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!editId} />
               </div>
               <div>
+                {/* Admin ve TODOS los roles en el selector */}
                 <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Rol</label>
                 <select className="premium-input" value={form.cod_rol} onChange={e => setForm({...form, cod_rol: e.target.value})} required>
                   <option value="">Seleccione un rol...</option>
                   {roles.map(r => (
                     <option key={r.cod_rol} value={r.cod_rol}>{r.nombre_rol}</option>
                   ))}
-                  {/* Fallback in case roles fail to load */}
-                  {roles.length === 0 && <option value={form.cod_rol || 3}>Rol Actual ({form.cod_rol})</option>}
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Fecha ingreso</label>
+                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Fecha de ingreso</label>
                 <input className="premium-input" type="date" value={form.fecha_ingreso} onChange={e => setForm({...form, fecha_ingreso: e.target.value})} required />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Estado (cod)</label>
-                <input className="premium-input" type="number" value={form.cod_estado_usuario} onChange={e => setForm({...form, cod_estado_usuario: e.target.value})} required />
+                <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Estado</label>
+                <select className="premium-input" value={form.cod_estado_usuario} onChange={e => setForm({...form, cod_estado_usuario: e.target.value})} required>
+                  {estadosList.map(es => (
+                    <option key={es.cod_estado_usuario} value={es.cod_estado_usuario}>{es.tipo_estado_usuario}</option>
+                  ))}
+                </select>
               </div>
               
               <div style={{ gridColumn: "1/-1", display: "flex", gap: "1rem", marginTop: '0.5rem' }}>
@@ -160,7 +185,7 @@ function Usuarios() {
                     <td>{u.correo}</td>
                     <td>
                       <span style={{ background: 'var(--bg)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.85rem', border: '1px solid var(--border)' }}>
-                        {roles.find(r => r.cod_rol === u.cod_rol)?.nombre_rol || `Rol ${u.cod_rol}`}
+                        {getNombreRol(u.cod_rol)}
                       </span>
                     </td>
                     <td>{u.fecha_ingreso?.split("T")[0]}</td>

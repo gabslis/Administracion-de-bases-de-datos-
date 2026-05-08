@@ -83,6 +83,13 @@ function Equipos() {
 
   return (
     <div>
+      {!isAdminOrTecnico ? (
+        <div style={{ padding: '3rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🔒</span>
+          <h3>Acceso restringido</h3>
+          <p style={{ color: 'var(--text-h)' }}>Solo administradores y técnicos pueden ver el inventario completo.</p>
+        </div>
+      ) : (
       <div style={{ padding: "2rem", maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2 style={{ color: 'var(--primary)', margin: 0 }}>💻 Inventario de Equipos</h2>
@@ -186,7 +193,7 @@ function Equipos() {
             </table>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

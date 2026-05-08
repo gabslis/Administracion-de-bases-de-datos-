@@ -6,6 +6,7 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem('usuario'));
   const isAdminOrTecnico = usuario?.cod_rol === 1 || usuario?.cod_rol === 4;
+  const isAdmin = usuario?.cod_rol === 1;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -33,7 +34,7 @@ function Layout({ children }) {
             <span className="sidebar-text">Dashboard</span>
           </NavLink>
           
-          {isAdminOrTecnico && (
+          {isAdmin && (
             <NavLink 
               to="/usuarios" 
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
@@ -43,29 +44,35 @@ function Layout({ children }) {
             </NavLink>
           )}
 
-          <NavLink 
-            to="/equipos" 
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="sidebar-icon">💻</span>
-            <span className="sidebar-text">Inventario</span>
-          </NavLink>
+          {isAdminOrTecnico && (
+            <NavLink 
+              to="/equipos" 
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">💻</span>
+              <span className="sidebar-text">Inventario</span>
+            </NavLink>
+          )}
 
-          <NavLink 
-            to="/ubicaciones" 
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="sidebar-icon">🏫</span>
-            <span className="sidebar-text">Ubicaciones</span>
-          </NavLink>
+          {isAdminOrTecnico && (
+            <NavLink 
+              to="/ubicaciones" 
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">🏫</span>
+              <span className="sidebar-text">Ubicaciones</span>
+            </NavLink>
+          )}
 
-          <NavLink 
-            to="/prestamos" 
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="sidebar-icon">📦</span>
-            <span className="sidebar-text">Asignaciones</span>
-          </NavLink>
+          {isAdminOrTecnico && (
+            <NavLink 
+              to="/prestamos" 
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">📦</span>
+              <span className="sidebar-text">Asignaciones</span>
+            </NavLink>
+          )}
 
           <NavLink 
             to="/mantenimientos" 
@@ -75,23 +82,23 @@ function Layout({ children }) {
             <span className="sidebar-text">Mantenimientos</span>
           </NavLink>
 
-          <NavLink 
-            to="/incidencias" 
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="sidebar-icon">🚨</span>
-            <span className="sidebar-text">Incidencias</span>
-          </NavLink>
-
           {isAdminOrTecnico && (
             <NavLink 
-              to="/sanciones" 
+              to="/incidencias" 
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
             >
-              <span className="sidebar-icon">⚖️</span>
-              <span className="sidebar-text">Sanciones</span>
+              <span className="sidebar-icon">🚨</span>
+              <span className="sidebar-text">Incidencias</span>
             </NavLink>
           )}
+
+          <NavLink 
+            to="/sanciones" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">⚖️</span>
+            <span className="sidebar-text">Sanciones</span>
+          </NavLink>
 
           {isAdminOrTecnico && (
             <NavLink 
