@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Mail, Lock, User, Briefcase, ArrowRight, LogIn, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 
 function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   
   // Form fields
   const [correo, setCorreo] = useState('');
@@ -18,9 +21,7 @@ function Login() {
 
   useEffect(() => {
     if (!isLogin) {
-      // Fetch roles for registration
-      api.get('/roles').then(res => {
-        // Excluir Administrador (1) y Técnico (4) del auto-registro
+      api.get('/usuarios/roles').then(res => {
         const allowedRoles = res.data.filter(r => r.cod_rol !== 1 && r.cod_rol !== 4);
         setRoles(allowedRoles);
         if (allowedRoles.length > 0) {
@@ -35,19 +36,17 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
     try {
       if (isLogin) {
-        // LOGIN
-        const res = await api.post('/login', { correo, password });
+        const res = await api.post('/auth/login', { correo, password });
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('usuario', JSON.stringify(res.data.usuario));
         toast.success(`Bienvenido, ${res.data.usuario.nombre}`);
         navigate('/dashboard');
       } else {
-        // REGISTRO
         const fecha_ingreso = new Date().toISOString().split('T')[0];
-        
         await api.post('/usuarios', {
           nombre,
           correo,
@@ -56,105 +55,155 @@ function Login() {
           fecha_ingreso,
           cod_estado_usuario: 1
         });
-        
         toast.success('Usuario creado exitosamente. Ahora puedes iniciar sesión.');
-        setIsLogin(true); // Switch back to login
+        setIsLogin(true);
         setPassword('');
       }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Ocurrió un error. Verifica tus datos.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
       minHeight: '100vh', 
-      background: 'var(--bg)' 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+      padding: '1.5rem',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div className="premium-card" style={{ width: '400px', maxWidth: '90%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ color: 'var(--primary)', marginBottom: '0.5rem' }}>🖥️ Préstamos Tech</h2>
-          <p style={{ color: 'var(--text)' }}>
-            {isLogin ? 'Ingresa tus credenciales para continuar' : 'Crea tu cuenta para acceder'}
+      {/* Decorative blobs */}
+      <div style={{ 
+        position: 'absolute', width: '500px', height: '500px', 
+        background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)',
+        top: '-10%', right: '-10%', borderRadius: '50%' 
+      }} />
+      <div style={{ 
+        position: 'absolute', width: '400px', height: '400px', 
+        background: 'radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 70%)',
+        bottom: '-10%', left: '-5%', borderRadius: '50%' 
+      }} />
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="glass-panel" 
+        style={{ 
+          width: '100%', 
+          maxWidth: '450px', 
+          padding: '2.5rem',
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.03)',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <motion.div 
+            initial={{ y: -10 }}
+            animate={{ y: 0 }}
+            style={{ 
+              display: 'inline-flex', padding: '1rem', borderRadius: '1.25rem', 
+              background: 'var(--primary)', color: 'white', marginBottom: '1.25rem',
+              boxShadow: '0 10px 15px -3px rgba(99,102,241,0.4)'
+            }}
+          >
+            {isLogin ? <LogIn size={28} /> : <UserPlus size={28} />}
+          </motion.div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
+            {isLogin ? '¡Bienvenido de nuevo!' : 'Crea tu cuenta'}
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem' }}>
+            {isLogin ? 'Ingresa tus credenciales para acceder al sistema' : 'Completa el formulario para registrarte'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {!isLogin && (
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Nombre Completo</label>
+            <div style={{ position: 'relative' }}>
+              <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
               <input
                 type="text"
                 className="premium-input"
+                style={{ paddingLeft: '3rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Ej. Juan Pérez"
+                placeholder="Nombre Completo"
                 required={!isLogin}
               />
             </div>
           )}
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Correo Electrónico</label>
+          <div style={{ position: 'relative' }}>
+            <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
             <input
               type="email"
               className="premium-input"
+              style={{ paddingLeft: '3rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
-              placeholder="correo@ejemplo.com"
+              placeholder="Correo Electrónico"
               required
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Contraseña</label>
+          <div style={{ position: 'relative' }}>
+            <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
             <input
               type="password"
               className="premium-input"
+              style={{ paddingLeft: '3rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Contraseña"
               required
             />
           </div>
 
           {!isLogin && (
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Rol</label>
+            <div style={{ position: 'relative' }}>
+              <Briefcase size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
               <select 
                 className="premium-input" 
+                style={{ paddingLeft: '3rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                 value={codRol} 
                 onChange={(e) => setCodRol(e.target.value)}
                 required={!isLogin}
               >
                 {roles.map(r => (
-                  <option key={r.cod_rol} value={r.cod_rol}>{r.nombre_rol}</option>
+                  <option key={r.cod_rol} value={r.cod_rol} style={{ background: '#1e1b4b' }}>{r.nombre_rol}</option>
                 ))}
               </select>
             </div>
           )}
 
-          <button type="submit" className="premium-btn premium-btn-primary" style={{ marginTop: '0.5rem', width: '100%' }}>
-            {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="premium-btn premium-btn-primary" 
+            style={{ marginTop: '0.5rem', width: '100%', height: '50px' }}
+          >
+            {loading ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Registrar Cuenta'}
+            {!loading && <ArrowRight size={18} />}
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
           <button 
             type="button" 
             className="premium-btn premium-btn-ghost" 
-            onClick={() => {
-              setIsLogin(!isLogin);
-            }}
-            style={{ width: '100%' }}
+            onClick={() => setIsLogin(!isLogin)}
+            style={{ width: '100%', color: 'rgba(255,255,255,0.6)' }}
           >
             {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

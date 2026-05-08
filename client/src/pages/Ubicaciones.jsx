@@ -15,8 +15,8 @@ function Ubicaciones() {
   const cargar = async () => {
     try {
       const [resEd, resAu] = await Promise.all([
-        api.get("/edificios"),
-        api.get("/aulas")
+        api.get("/prestamos/edificios"),
+        api.get("/prestamos/aulas")
       ]);
       setEdificios(resEd.data);
       setAulas(resAu.data);
