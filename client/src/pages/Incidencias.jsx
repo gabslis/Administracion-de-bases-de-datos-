@@ -30,10 +30,11 @@ function Incidencias() {
   };
 
   const cargarDependencias = async () => {
-    if (!isAdminOrTecnico) return;
     try {
+      // Si es admin/tech, carga todos. Si es docente, carga solo sus préstamos
+      const prestamosEndpoint = isAdminOrTecnico ? "/prestamos" : `/prestamos/usuario/${usuarioActual.cod_usuario}`;
       const [prestamosRes, gravedadRes] = await Promise.all([
-        api.get("/prestamos"),
+        api.get(prestamosEndpoint),
         api.get("/gravedad_incidencia")
       ]);
       setPrestamosList(prestamosRes.data);
@@ -77,25 +78,30 @@ function Incidencias() {
       <div style={{ padding: "2rem", maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2 style={{ color: 'var(--primary)', margin: 0 }}>🚨 Reportes de Incidencias</h2>
-          {isAdminOrTecnico && (
-            <button onClick={() => { setForm(vacio); setMostrarForm(!mostrarForm); }}
-              className="premium-btn premium-btn-danger">
-              + Reportar Incidencia
-            </button>
-          )}
+          <button onClick={() => { setForm(vacio); setMostrarForm(!mostrarForm); }}
+            className="premium-btn premium-btn-danger">
+            + Reportar Incidencia
+          </button>
         </div>
 
-        {isAdminOrTecnico && mostrarForm && (
+        {mostrarForm && (
           <div className="premium-card" style={{ marginBottom: "2rem", borderLeft: '4px solid #ef4444' }}>
             <h3 style={{ color: "var(--danger)", marginTop: 0, marginBottom: '1.5rem' }}>
               Nueva Incidencia
             </h3>
+            <p style={{ color: 'var(--text-h)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              {isAdminOrTecnico ? "Reportar incidencia general o de un préstamo específico." : "Selecciona el préstamo donde ocurrió el problema."}
+            </p>
             <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1.5rem" }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.9rem', fontWeight: 500 }}>Préstamo Relacionado</label>
                 <select className="premium-input" value={form.cod_prestamo} onChange={e => setForm({...form, cod_prestamo: e.target.value})} required>
                   <option value="">Seleccione préstamo...</option>
-                  {prestamosList.map(p => <option key={p.cod_prestamo} value={p.cod_prestamo}>#{p.cod_prestamo} - {p.nombre_equipo} ({p.nombre_usuario})</option>)}
+                  {prestamosList.map(p => (
+                    <option key={p.cod_prestamo} value={p.cod_prestamo}>
+                      #{p.cod_prestamo} - {p.nombre_equipo} {isAdminOrTecnico ? `(${p.nombre_usuario})` : ""}
+                    </option>
+                  ))}
                 </select>
               </div>
               

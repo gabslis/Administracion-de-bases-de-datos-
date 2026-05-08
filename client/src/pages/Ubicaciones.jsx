@@ -4,7 +4,7 @@ import api from "../api/axios";
 
 function Ubicaciones() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const isAdmin = usuarioActual?.cod_rol === 1;
 
   const [edificios, setEdificios] = useState([]);
   const [aulas, setAulas] = useState([]);
@@ -89,7 +89,7 @@ function Ubicaciones() {
         {/* EDIFICIOS */}
         <div>
           <h3 style={{ color: 'var(--text)' }}>Edificios</h3>
-          {isAdminOrTecnico && (
+          {isAdmin && (
             <div className="premium-card" style={{ marginBottom: "1rem" }}>
               <form onSubmit={handleAddEdificio} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
@@ -107,7 +107,7 @@ function Ubicaciones() {
                 <tr>
                   <th>ID</th>
                   <th>Edificio</th>
-                  {isAdminOrTecnico && <th>Acciones</th>}
+                  {isAdmin && <th>Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -115,7 +115,7 @@ function Ubicaciones() {
                   <tr key={ed.cod_edificio}>
                     <td style={{ color: "var(--primary)", fontWeight: 500 }}>#{ed.cod_edificio}</td>
                     <td>{ed.nombre_edificio}</td>
-                    {isAdminOrTecnico && (
+                    {isAdmin && (
                       <td>
                         <button onClick={() => handleDeleteEdificio(ed.cod_edificio)} className="premium-btn premium-btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem' }}>Eliminar</button>
                       </td>
@@ -130,7 +130,7 @@ function Ubicaciones() {
         {/* AULAS */}
         <div>
           <h3 style={{ color: 'var(--text)' }}>Aulas</h3>
-          {isAdminOrTecnico && (
+          {isAdmin && (
             <div className="premium-card" style={{ marginBottom: "1rem" }}>
               <form onSubmit={handleAddAula} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'end' }}>
                 <div>
@@ -158,7 +158,7 @@ function Ubicaciones() {
                   <th>ID</th>
                   <th>Aula</th>
                   <th>Edificio</th>
-                  {isAdminOrTecnico && <th>Acciones</th>}
+                  {isAdmin && <th>Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +167,7 @@ function Ubicaciones() {
                     <td style={{ color: "var(--primary)", fontWeight: 500 }}>#{au.cod_aula}</td>
                     <td>{au.nombre_aula}</td>
                     <td>{getNombreEdificio(au.cod_edificio)}</td>
-                    {isAdminOrTecnico && (
+                    {isAdmin && (
                       <td>
                         <button onClick={() => handleDeleteAula(au.cod_aula)} className="premium-btn premium-btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem' }}>Eliminar</button>
                       </td>

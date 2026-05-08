@@ -15,7 +15,7 @@ const catalogos = [
 
 function Configuracion() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const isAdmin = usuarioActual?.cod_rol === 1;
 
   const [activeTab, setActiveTab] = useState(catalogos[0]);
   const [data, setData] = useState([]);
@@ -66,8 +66,14 @@ function Configuracion() {
     }
   };
 
-  if (!isAdminOrTecnico) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>No tienes permisos para ver esta página.</div>;
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center' }}>
+        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🔒</span>
+        <h3>Acceso restringido</h3>
+        <p style={{ color: 'var(--text-h)' }}>Solo los <strong>Administradores</strong> pueden modificar la configuración del sistema.</p>
+      </div>
+    );
   }
 
   return (

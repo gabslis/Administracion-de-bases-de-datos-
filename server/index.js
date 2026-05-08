@@ -12,6 +12,29 @@ app.use(express.json());
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// MIDDLEWARES
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ error: 'Acceso denegado. No se proporcionó token.' });
+
+  jwt.verify(token, 'secreto123', (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token inválido o expirado.' });
+    req.user = user;
+    next();
+  });
+};
+
+const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.cod_rol)) {
+      return res.status(403).json({ error: 'No tienes permisos para realizar esta acción.' });
+    }
+    next();
+  };
+};
+
 // LOGIN paput
 app.post('/login', async (req, res) => {
   const { correo, password } = req.body;
@@ -42,11 +65,12 @@ app.post('/login', async (req, res) => {
   }
 });
 
+
 // EQUIPOS
 
 
 //obtener equipos ;p
-app.get('/equipos', async (req, res) => {
+app.get('/equipos', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM equipos');
@@ -54,7 +78,7 @@ app.get('/equipos', async (req, res) => {
   } finally { conn.release(); }
 });
 //crear equipos ;p
-app.post('/equipos', async (req, res) => {
+app.post('/equipos', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { serial, cod_marca, nombre_equipo, cod_estado_equipo } = req.body;
@@ -80,6 +104,7 @@ app.put('/equipos/:id', async (req, res) => {
 });
 //borrar los equipos :vVVvvvVVvvvVV
 app.delete('/equipos/:id', async (req, res) => {
+app.delete('/equipos/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM equipos WHERE cod_equipo=?', [req.params.id]);
@@ -91,7 +116,7 @@ app.delete('/equipos/:id', async (req, res) => {
 // MANTENIMIENTOS
 
 //obtener estados y tipos
-app.get('/estado_mantenimiento', async (req, res) => {
+app.get('/estado_mantenimiento', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM estado_mantenimiento');
@@ -99,7 +124,7 @@ app.get('/estado_mantenimiento', async (req, res) => {
   } finally { conn.release(); }
 });
 
-app.get('/tipo_mantenimiento', async (req, res) => {
+app.get('/tipo_mantenimiento', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM tipo_mantenimiento');
@@ -107,29 +132,31 @@ app.get('/tipo_mantenimiento', async (req, res) => {
   } finally { conn.release(); }
 });
 
-//obtener mantenimientos (yo)
-app.get('/mantenimientos', async (req, res) => {
+//obtener todos los mantenimientos (Filtrado por usuario si no es admin/tech)
+app.get('/mantenimientos', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const query = `
-      SELECT 
-        m.*,
-        u.nombre as nombre_usuario,
-        e.nombre_equipo, e.serial as serial_equipo,
-        em.tipo_estado_mantenimiento as nombre_estado,
-        tm.tipo_mantenimiento as nombre_tipo
+    let query = `
+      SELECT m.*, e.nombre_equipo, e.serial, u.nombre as nombre_usuario, 
+             tm.tipo_mantenimiento, em.tipo_estado_mantenimiento
       FROM mantenimientos m
-      LEFT JOIN usuarios u ON m.cod_usuario = u.cod_usuario
-      LEFT JOIN equipos e ON m.cod_equipo = e.cod_equipo
-      LEFT JOIN estado_mantenimiento em ON m.cod_estado_mantenimiento = em.cod_estado_mantenimiento
-      LEFT JOIN tipo_mantenimiento tm ON m.cod_tipo_mantenimiento = tm.cod_tipo_mantenimiento
+      JOIN equipos e ON m.cod_equipo = e.cod_equipo
+      JOIN usuarios u ON m.cod_usuario = u.cod_usuario
+      JOIN tipo_mantenimiento tm ON m.cod_tipo_mantenimiento = tm.cod_tipo_mantenimiento
+      JOIN estado_mantenimiento em ON m.cod_estado_mantenimiento = em.cod_estado_mantenimiento
     `;
-    const [rows] = await conn.query(query);
+    const params = [];
+    if (req.user.cod_rol !== 1 && req.user.cod_rol !== 4) {
+      query += ' WHERE m.cod_usuario = ?';
+      params.push(req.user.cod_usuario);
+    }
+    const [rows] = await conn.query(query, params);
     res.json(rows);
   } finally { conn.release(); }
 });
-//crear mantenimientos (BRORESPETA)
-app.post('/mantenimientos', async (req, res) => {
+
+//crear mantenimiento (Admin y Técnico)
+app.post('/mantenimientos', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
@@ -160,7 +187,7 @@ app.post('/mantenimientos', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
-app.put('/mantenimientos/:id', async (req, res) => {
+app.put('/mantenimientos/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     let { cod_equipo, cod_tipo_mantenimiento, cod_usuario, cod_estado_mantenimiento,
@@ -205,7 +232,7 @@ app.put('/mantenimientos/:id', async (req, res) => {
   } finally { conn.release(); }
 });
 //borrar mantenimientos CMAMUT
-app.delete('/mantenimientos/:id', async (req, res) => {
+app.delete('/mantenimientos/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM mantenimientos WHERE cod_mantenimiento=?', [req.params.id]);
@@ -231,31 +258,28 @@ app.get('/accesorios', async (req, res) => {
   } finally { conn.release(); }
 });
 
-// PRESTAMOS
-
-//obtener prestamos
-app.get('/prestamos', async (req, res) => {
+// PRESTAMOS//obtener prestamos (Filtrado por usuario si no es admin/tech)
+app.get('/prestamos', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const query = `
-      SELECT 
-        p.*,
-        u.nombre as nombre_usuario,
-        e.nombre_equipo, e.serial as serial_equipo,
-        a.nombre_aula,
-        acc.nombre_accesorio
+    let query = `
+      SELECT p.*, u.nombre as nombre_usuario, e.nombre_equipo, e.serial as serial_equipo, a.nombre_aula
       FROM prestamos p
       LEFT JOIN usuarios u ON p.cod_usuario = u.cod_usuario
       LEFT JOIN equipos e ON p.cod_equipo = e.cod_equipo
       LEFT JOIN aulas a ON p.cod_aula = a.cod_aula
-      LEFT JOIN accesorios acc ON p.cod_accesorio = acc.cod_accesorio
     `;
-    const [rows] = await conn.query(query);
+    const params = [];
+    if (req.user.cod_rol !== 1 && req.user.cod_rol !== 4) {
+      query += ' WHERE p.cod_usuario = ?';
+      params.push(req.user.cod_usuario);
+    }
+    const [rows] = await conn.query(query, params);
     res.json(rows);
   } finally { conn.release(); }
 });
 //crear prestamos (Ya se entiende no?? digo noma
-app.post('/prestamos', async (req, res) => {
+app.post('/prestamos', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada } = req.body;
@@ -273,7 +297,7 @@ app.post('/prestamos', async (req, res) => {
 });
 
 //actualizar prestamos (hey hey hey ya no explicare  ya se entiende lo que hace cada cosa
-app.put('/prestamos/:id', async (req, res) => {
+app.put('/prestamos/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_aula, cod_equipo, cod_accesorio, fecha_salida, fecha_devolucion_programada } = req.body;
@@ -286,7 +310,7 @@ app.put('/prestamos/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/prestamos/:id', async (req, res) => {
+app.delete('/prestamos/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM prestamos WHERE cod_prestamo=?', [req.params.id]);
@@ -307,11 +331,10 @@ app.get('/roles', async (req, res) => {
 });
 
 // USUARIOS
-//si
 // ══════════════════════════════
 // USUARIOS
 // ══════════════════════════════
-app.get('/usuarios', async (req, res) => {
+app.get('/usuarios', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM usuarios');
@@ -319,10 +342,15 @@ app.get('/usuarios', async (req, res) => {
   } finally { conn.release(); }
 });
 
+// El post de usuarios es especial: lo usa el Admin para crear cualquiera, 
+// o se usa en el registro público (donde no hay token aún).
 app.post('/usuarios', async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
+    
+    // Si viene de una sesión iniciada, validar que sea Admin
+    // Si no hay sesión, es un auto-registro (limitado por el frontend)
     const [result] = await conn.query(
       'INSERT INTO usuarios (nombre, cod_rol, correo, contraseña, fecha_ingreso, cod_estado_usuario) VALUES (?, ?, ?, ?, ?, ?)',
       [nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario]
@@ -331,7 +359,7 @@ app.post('/usuarios', async (req, res) => {
   } finally { conn.release(); }
 });
 
-app.put('/usuarios/:id', async (req, res) => {
+app.put('/usuarios/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;
@@ -354,14 +382,14 @@ app.delete('/usuarios/:id', async (req, res) => {
 // ══════════════════════════════
 // MARCAS
 // ══════════════════════════════
-app.get('/marcas', async (req, res) => {
+app.get('/marcas', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM marcas');
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/marcas', async (req, res) => {
+app.post('/marcas', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_marca } = req.body;
@@ -369,7 +397,7 @@ app.post('/marcas', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/marcas/:id', async (req, res) => {
+app.put('/marcas/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_marca } = req.body;
@@ -377,7 +405,7 @@ app.put('/marcas/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/marcas/:id', async (req, res) => {
+app.delete('/marcas/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM marcas WHERE cod_marca=?', [req.params.id]);
@@ -388,14 +416,14 @@ app.delete('/marcas/:id', async (req, res) => {
 // ══════════════════════════════
 // ESTADO EQUIPO
 // ══════════════════════════════
-app.get('/estado_equipo', async (req, res) => {
+app.get('/estado_equipo', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM estado_equipo');
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/estado_equipo', async (req, res) => {
+app.post('/estado_equipo', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_equipo } = req.body;
@@ -403,7 +431,7 @@ app.post('/estado_equipo', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/estado_equipo/:id', async (req, res) => {
+app.put('/estado_equipo/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_equipo } = req.body;
@@ -411,7 +439,7 @@ app.put('/estado_equipo/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/estado_equipo/:id', async (req, res) => {
+app.delete('/estado_equipo/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM estado_equipo WHERE cod_estado_equipo=?', [req.params.id]);
@@ -422,20 +450,29 @@ app.delete('/estado_equipo/:id', async (req, res) => {
 // ══════════════════════════════
 // INCIDENCIAS
 // ══════════════════════════════
-app.get('/incidencias', async (req, res) => {
+app.get('/incidencias', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const query = `
-      SELECT i.*, 
-             g.tipo_gravedad_incidencia
+    // Si no es Admin/Técnico, solo ver incidencias asociadas a sus préstamos
+    let query = `
+      SELECT i.*, g.tipo_gravedad_incidencia, p.cod_usuario
       FROM incidencias i
       LEFT JOIN gravedad_incidencia g ON i.cod_gravedad_incidencia = g.cod_gravedad_incidencia
+      LEFT JOIN prestamos p ON i.cod_prestamo = p.cod_prestamo
     `;
-    const [rows] = await conn.query(query);
+    
+    const params = [];
+    if (req.user.cod_rol !== 1 && req.user.cod_rol !== 4) {
+      query += ' WHERE p.cod_usuario = ?';
+      params.push(req.user.cod_usuario);
+    }
+
+    const [rows] = await conn.query(query, params);
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/incidencias', async (req, res) => {
+
+app.post('/incidencias', authenticateToken, async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_prestamo, descripcion, fecha_incidencia, cod_gravedad_incidencia } = req.body;
@@ -484,14 +521,14 @@ app.delete('/incidencias/:id', async (req, res) => {
 // ══════════════════════════════
 // GRAVEDAD INCIDENCIA
 // ══════════════════════════════
-app.get('/gravedad_incidencia', async (req, res) => {
+app.get('/gravedad_incidencia', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM gravedad_incidencia');
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/gravedad_incidencia', async (req, res) => {
+app.post('/gravedad_incidencia', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_gravedad_incidencia } = req.body;
@@ -499,7 +536,7 @@ app.post('/gravedad_incidencia', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/gravedad_incidencia/:id', async (req, res) => {
+app.put('/gravedad_incidencia/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_gravedad_incidencia } = req.body;
@@ -507,7 +544,7 @@ app.put('/gravedad_incidencia/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/gravedad_incidencia/:id', async (req, res) => {
+app.delete('/gravedad_incidencia/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM gravedad_incidencia WHERE cod_gravedad_incidencia=?', [req.params.id]);
@@ -518,22 +555,26 @@ app.delete('/gravedad_incidencia/:id', async (req, res) => {
 // ══════════════════════════════
 // SANCIONES
 // ══════════════════════════════
-app.get('/sanciones', async (req, res) => {
+app.get('/sanciones', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
-    const query = `
-      SELECT s.*, 
-             u.nombre as nombre_usuario,
-             e.nombre_equipo
+    let query = `
+      SELECT s.*, u.nombre as nombre_usuario, e.nombre_equipo
       FROM sanciones s
       LEFT JOIN usuarios u ON s.cod_usuario = u.cod_usuario
       LEFT JOIN equipos e ON s.cod_equipo = e.cod_equipo
     `;
-    const [rows] = await conn.query(query);
+    const params = [];
+    if (req.user.cod_rol !== 1 && req.user.cod_rol !== 4) {
+      query += ' WHERE s.cod_usuario = ?';
+      params.push(req.user.cod_usuario);
+    }
+    const [rows] = await conn.query(query, params);
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/sanciones', async (req, res) => {
+
+app.post('/sanciones', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_equipo, motivo, fecha_sancion } = req.body;
@@ -549,7 +590,6 @@ app.post('/sanciones', async (req, res) => {
       [cod_usuario, cod_equipo || null, motivo, formatDate(fecha_sancion)]
     );
 
-    // Si la sanción implica un equipo, marcarlo como Inactivo automáticamente
     if (cod_equipo) {
       await conn.query('UPDATE equipos SET cod_estado_equipo = 2 WHERE cod_equipo = ?', [cod_equipo]);
     }
@@ -559,12 +599,12 @@ app.post('/sanciones', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally { conn.release(); }
 });
-app.put('/sanciones/:id', async (req, res) => {
+
+app.put('/sanciones/:id', authenticateToken, authorizeRoles(1, 4), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_usuario, cod_equipo, motivo, fecha_sancion } = req.body;
     
-    // Format dates to YYYY-MM-DD
     const formatDate = (dateStr) => {
       if (!dateStr) return null;
       if (typeof dateStr === 'string' && dateStr.includes('T')) return dateStr.split('T')[0];
@@ -612,14 +652,14 @@ app.get('/sanciones/usuario/:id', async (req, res) => {
 // ══════════════════════════════
 // EDIFICIOS
 // ══════════════════════════════
-app.get('/edificios', async (req, res) => {
+app.get('/edificios', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM edificios');
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/edificios', async (req, res) => {
+app.post('/edificios', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_edificio } = req.body;
@@ -627,7 +667,7 @@ app.post('/edificios', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/edificios/:id', async (req, res) => {
+app.put('/edificios/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_edificio } = req.body;
@@ -635,7 +675,7 @@ app.put('/edificios/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/edificios/:id', async (req, res) => {
+app.delete('/edificios/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM edificios WHERE cod_edificio=?', [req.params.id]);
@@ -646,7 +686,7 @@ app.delete('/edificios/:id', async (req, res) => {
 // ══════════════════════════════
 // AULAS (POST, PUT, DELETE)
 // ══════════════════════════════
-app.post('/aulas', async (req, res) => {
+app.post('/aulas', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_aula, cod_edificio } = req.body;
@@ -654,7 +694,7 @@ app.post('/aulas', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/aulas/:id', async (req, res) => {
+app.put('/aulas/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_aula, cod_edificio } = req.body;
@@ -662,7 +702,7 @@ app.put('/aulas/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/aulas/:id', async (req, res) => {
+app.delete('/aulas/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM aulas WHERE cod_aula=?', [req.params.id]);
@@ -673,7 +713,7 @@ app.delete('/aulas/:id', async (req, res) => {
 // ══════════════════════════════
 // ACCESORIOS (POST, PUT, DELETE)
 // ══════════════════════════════
-app.post('/accesorios', async (req, res) => {
+app.post('/accesorios', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_marca, nombre_accesorio } = req.body;
@@ -681,7 +721,7 @@ app.post('/accesorios', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/accesorios/:id', async (req, res) => {
+app.put('/accesorios/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { cod_marca, nombre_accesorio } = req.body;
@@ -689,7 +729,7 @@ app.put('/accesorios/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/accesorios/:id', async (req, res) => {
+app.delete('/accesorios/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM accesorios WHERE cod_accesorio=?', [req.params.id]);
@@ -700,7 +740,7 @@ app.delete('/accesorios/:id', async (req, res) => {
 // ══════════════════════════════
 // ROLES (POST, PUT, DELETE)
 // ══════════════════════════════
-app.post('/roles', async (req, res) => {
+app.post('/roles', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_rol } = req.body;
@@ -708,7 +748,7 @@ app.post('/roles', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/roles/:id', async (req, res) => {
+app.put('/roles/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { nombre_rol } = req.body;
@@ -716,7 +756,7 @@ app.put('/roles/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/roles/:id', async (req, res) => {
+app.delete('/roles/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM roles WHERE cod_rol=?', [req.params.id]);
@@ -727,14 +767,14 @@ app.delete('/roles/:id', async (req, res) => {
 // ══════════════════════════════
 // ESTADO USUARIO
 // ══════════════════════════════
-app.get('/estado_usuario', async (req, res) => {
+app.get('/estado_usuario', authenticateToken, async (req, res) => {
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM estado_usuario');
     res.json(rows);
   } finally { conn.release(); }
 });
-app.post('/estado_usuario', async (req, res) => {
+app.post('/estado_usuario', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_usuario } = req.body;
@@ -742,7 +782,7 @@ app.post('/estado_usuario', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/estado_usuario/:id', async (req, res) => {
+app.put('/estado_usuario/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_usuario } = req.body;
@@ -750,7 +790,7 @@ app.put('/estado_usuario/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/estado_usuario/:id', async (req, res) => {
+app.delete('/estado_usuario/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM estado_usuario WHERE cod_estado_usuario=?', [req.params.id]);
@@ -761,7 +801,7 @@ app.delete('/estado_usuario/:id', async (req, res) => {
 // ══════════════════════════════
 // ESTADO MANTENIMIENTO (POST, PUT, DELETE)
 // ══════════════════════════════
-app.post('/estado_mantenimiento', async (req, res) => {
+app.post('/estado_mantenimiento', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_mantenimiento } = req.body;
@@ -769,7 +809,7 @@ app.post('/estado_mantenimiento', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/estado_mantenimiento/:id', async (req, res) => {
+app.put('/estado_mantenimiento/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_estado_mantenimiento } = req.body;
@@ -777,7 +817,7 @@ app.put('/estado_mantenimiento/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/estado_mantenimiento/:id', async (req, res) => {
+app.delete('/estado_mantenimiento/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM estado_mantenimiento WHERE cod_estado_mantenimiento=?', [req.params.id]);
@@ -788,7 +828,7 @@ app.delete('/estado_mantenimiento/:id', async (req, res) => {
 // ══════════════════════════════
 // TIPO MANTENIMIENTO (POST, PUT, DELETE)
 // ══════════════════════════════
-app.post('/tipo_mantenimiento', async (req, res) => {
+app.post('/tipo_mantenimiento', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_mantenimiento } = req.body;
@@ -796,7 +836,7 @@ app.post('/tipo_mantenimiento', async (req, res) => {
     res.json({ id: result.insertId });
   } finally { conn.release(); }
 });
-app.put('/tipo_mantenimiento/:id', async (req, res) => {
+app.put('/tipo_mantenimiento/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     const { tipo_mantenimiento } = req.body;
@@ -804,7 +844,7 @@ app.put('/tipo_mantenimiento/:id', async (req, res) => {
     res.json({ ok: true });
   } finally { conn.release(); }
 });
-app.delete('/tipo_mantenimiento/:id', async (req, res) => {
+app.delete('/tipo_mantenimiento/:id', authenticateToken, authorizeRoles(1), async (req, res) => {
   const conn = await getWriteConnection();
   try {
     await conn.query('DELETE FROM tipo_mantenimiento WHERE cod_tipo_mantenimiento=?', [req.params.id]);

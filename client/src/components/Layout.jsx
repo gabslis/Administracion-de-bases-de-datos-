@@ -54,15 +54,13 @@ function Layout({ children }) {
             </NavLink>
           )}
 
-          {isAdminOrTecnico && (
-            <NavLink 
-              to="/ubicaciones" 
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            >
-              <span className="sidebar-icon">🏫</span>
-              <span className="sidebar-text">Ubicaciones</span>
-            </NavLink>
-          )}
+          <NavLink 
+            to="/ubicaciones" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">🏫</span>
+            <span className="sidebar-text">Ubicaciones</span>
+          </NavLink>
 
           {isAdminOrTecnico && (
             <NavLink 
@@ -82,15 +80,13 @@ function Layout({ children }) {
             <span className="sidebar-text">Mantenimientos</span>
           </NavLink>
 
-          {isAdminOrTecnico && (
-            <NavLink 
-              to="/incidencias" 
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            >
-              <span className="sidebar-icon">🚨</span>
-              <span className="sidebar-text">Incidencias</span>
-            </NavLink>
-          )}
+          <NavLink 
+            to="/incidencias" 
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="sidebar-icon">🚨</span>
+            <span className="sidebar-text">Incidencias</span>
+          </NavLink>
 
           <NavLink 
             to="/sanciones" 
@@ -100,7 +96,7 @@ function Layout({ children }) {
             <span className="sidebar-text">Sanciones</span>
           </NavLink>
 
-          {isAdminOrTecnico && (
+          {isAdmin && (
             <NavLink 
               to="/configuracion" 
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
