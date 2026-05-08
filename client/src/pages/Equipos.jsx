@@ -184,9 +184,13 @@ function Equipos() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="premium-btn premium-btn-ghost">
-            <Filter size={18} /> Filtros
+          <button 
+            className="premium-btn premium-btn-ghost"
+            onClick={() => { setSearchQuery(""); cargar(); toast.success("Filtros limpiados"); }}
+          >
+            <Filter size={18} /> Limpiar
           </button>
+
         </div>
 
         <div style={{ overflowX: 'auto' }}>

@@ -16,8 +16,10 @@ import {
   FileText,
   Trash2,
   ChevronRight,
-  X
+  X,
+  Activity
 } from "lucide-react";
+
 import api from "../api/axios";
 
 function Mantenimientos() {

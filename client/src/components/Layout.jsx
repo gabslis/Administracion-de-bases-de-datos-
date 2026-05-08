@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import { 
   LayoutDashboard, 
   Users, 
@@ -187,7 +188,10 @@ function Layout({ children }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <button style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', position: 'relative' }}>
+            <button 
+              onClick={() => toast('No hay notificaciones nuevas', { icon: '🔔' })}
+              style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', position: 'relative' }}
+            >
               <Bell size={20} />
               <span style={{ 
                 position: 'absolute', top: -2, right: -2, width: '8px', height: '8px', 
@@ -195,7 +199,10 @@ function Layout({ children }) {
               }} />
             </button>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.5rem', borderLeft: '1px solid var(--border)' }}>
+            <div 
+              onClick={() => toast.success(`Sesión iniciada como ${usuario?.nombre}`)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.5rem', borderLeft: '1px solid var(--border)', cursor: 'pointer' }}
+            >
               <div style={{ textAlign: 'right', display: window.innerWidth < 640 ? 'none' : 'block' }}>
                 <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-h)' }}>{usuario?.nombre}</p>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text)', opacity: 0.8 }}>
@@ -211,6 +218,7 @@ function Layout({ children }) {
               </div>
             </div>
           </div>
+
         </header>
 
         {/* CONTENT */}

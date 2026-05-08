@@ -50,40 +50,40 @@ let readPool  = createPool('mirror',  'consulta'); // Lecturas   → ESPEJO:3307
 async function getWriteConnection() {
   try {
     const conn = await writePool.getConnection();
-    console.log('✅ Escritura conectada a PRIMARY 3306');
+    console.log(`✅ Escritura conectada a ${instances.primary.host}:${instances.primary.port}`);
     return conn;
   } catch (err) {
-    console.warn('⚠️  PRIMARY caído, intentando ESPEJO 3307...', err.message);
+    console.warn(`⚠️  FALLO en ${instances.primary.host}:${instances.primary.port}, intentando alternativa...`, err.message);
     try {
       writePool = createPool('mirror', 'admin');
       const conn = await writePool.getConnection();
-      console.log('✅ Escritura conectada a ESPEJO 3307');
+      console.log(`✅ Escritura conectada a EMERGENCIA ${instances.mirror.host}:${instances.mirror.port}`);
       return conn;
     } catch (err2) {
-      console.error('❌ ESPEJO también falló:', err2.message);
+      console.error('❌ Todas las instancias de escritura fallaron:', err2.message);
       throw new Error('No hay instancias de escritura disponibles');
     }
   }
 }
 
-// ── CONEXIÓN DE LECTURA CON FAILOVER ──
 async function getReadConnection() {
   try {
     const conn = await readPool.getConnection();
-    console.log('✅ Lectura conectada a ESPEJO 3307');
+    console.log(`✅ Lectura conectada a ${instances.mirror.host}:${instances.mirror.port}`);
     return conn;
   } catch (err) {
-    console.warn('⚠️  ESPEJO caído, intentando PRIMARY 3306...', err.message);
+    console.warn(`⚠️  FALLO en ${instances.mirror.host}:${instances.mirror.port}, intentando alternativa...`, err.message);
     try {
       readPool = createPool('primary', 'consulta');
       const conn = await readPool.getConnection();
-      console.log('✅ Lectura conectada a PRIMARY 3306');
+      console.log(`✅ Lectura conectada a EMERGENCIA ${instances.primary.host}:${instances.primary.port}`);
       return conn;
     } catch (err2) {
-      console.error('❌ PRIMARY también falló:', err2.message);
+      console.error('❌ Todas las instancias de lectura fallaron:', err2.message);
       throw new Error('No hay instancias de lectura disponibles');
     }
   }
 }
+
 
 module.exports = { getWriteConnection, getReadConnection };

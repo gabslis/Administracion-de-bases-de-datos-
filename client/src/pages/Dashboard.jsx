@@ -12,7 +12,8 @@ import {
   Clock, 
   ArrowRight,
   Plus,
-  Search
+  Search,
+  History
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -20,6 +21,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem('usuario'));
   const isAdminOrTecnico = usuario?.cod_rol === 1 || usuario?.cod_rol === 4;
+  const isAdmin = usuario?.cod_rol === 1;
   
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -37,39 +39,50 @@ function Dashboard() {
     const fetchDatos = async () => {
       setIsLoading(true);
       try {
-        const [equipos, usuarios, prestamos, mantenimientos, incidencias, sanciones] = await Promise.all([
-          api.get('/equipos'),
-          api.get('/usuarios'),
-          api.get('/prestamos'),
-          api.get('/mantenimientos'),
-          api.get('/incidencias'),
-          api.get('/sanciones'),
-        ]);
-        
-        let prestamosList = prestamos.data;
-        let mantenimientosList = mantenimientos.data;
+        // Ejecutamos peticiones en paralelo pero con catch individual para que una falla no rompa todo
+        const safeFetch = async (url) => {
+          try {
+            const res = await api.get(url);
+            return res.data;
+          } catch (e) {
+            console.warn(`Error cargando ${url}:`, e.message);
+            return [];
+          }
+        };
 
-        if (!isAdminOrTecnico) {
-          prestamosList = prestamosList.filter(p => p.cod_usuario === usuario?.cod_usuario);
-          mantenimientosList = mantenimientosList.filter(m => m.cod_usuario === usuario?.cod_usuario);
-        }
+        const [
+          equiposData, 
+          usuariosData, 
+          prestamosData, 
+          mantenimientosData, 
+          incidenciasData, 
+          sancionesData
+        ] = await Promise.all([
+          isAdminOrTecnico ? safeFetch('/equipos') : Promise.resolve([]),
+          isAdmin ? safeFetch('/usuarios') : Promise.resolve([]),
+          safeFetch('/prestamos'),
+          safeFetch('/mantenimientos'),
+          safeFetch('/incidencias'),
+          safeFetch('/sanciones'),
+        ]);
 
         setStats({
-          equipos: equipos.data.length,
-          usuarios: usuarios.data.length,
-          prestamos: prestamosList.length,
-          mantenimientosActivos: mantenimientosList.filter(m => m.cod_estado_mantenimiento === 1 || m.cod_estado_mantenimiento === 2).length,
-          incidencias: incidencias.data.length,
-          sancionesActivas: sanciones.data.length,
+          equipos: equiposData.length,
+          usuarios: usuariosData.length,
+          prestamos: prestamosData.length,
+          mantenimientosActivos: mantenimientosData.filter(m => m.cod_estado_mantenimiento === 1 || m.cod_estado_mantenimiento === 2).length,
+          incidencias: incidenciasData.length,
+          sancionesActivas: sancionesData.length,
         });
 
-        const ultimosMantenimientos = [...mantenimientosList]
+        // Actividad reciente: tomamos los últimos mantenimientos o préstamos
+        const combinada = [...mantenimientosData]
           .sort((a, b) => b.cod_mantenimiento - a.cod_mantenimiento)
           .slice(0, 5);
         
-        setActividadReciente(ultimosMantenimientos);
+        setActividadReciente(combinada);
       } catch (err) {
-        console.error(err);
+        console.error("Error crítico en Dashboard:", err);
       } finally {
         setTimeout(() => setIsLoading(false), 600);
       }
@@ -77,18 +90,21 @@ function Dashboard() {
     if (usuario) fetchDatos();
   }, []);
 
-  const StatCard = ({ title, value, icon: Icon, color, index }) => (
+  const StatCard = ({ title, value, icon: Icon, color, index, onClick }) => (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
+      onClick={onClick}
       className="premium-card" 
       style={{ 
         display: 'flex', 
         flexDirection: 'column', 
         gap: '1rem',
-        borderLeft: `4px solid ${color}`
+        borderLeft: `4px solid ${color}`,
+        cursor: onClick ? 'pointer' : 'default'
       }}
+      whileHover={onClick ? { y: -5, boxShadow: '0 12px 40px rgba(0,0,0,0.12)' } : {}}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ 
@@ -114,11 +130,11 @@ function Dashboard() {
 
   const renderEstadoBadge = (cod_estado) => {
     const configs = {
-      1: { label: 'Pendiente', color: 'var(--warning)' },
-      2: { label: 'En Proceso', color: 'var(--primary)' },
-      3: { label: 'Completado', color: 'var(--success)' }
+      1: { label: 'Pendiente', color: '#f59e0b' },
+      2: { label: 'En Proceso', color: '#6366f1' },
+      3: { label: 'Completado', color: '#10b981' }
     };
-    const config = configs[cod_estado] || { label: 'Desconocido', color: 'var(--secondary)' };
+    const config = configs[cod_estado] || { label: 'Desconocido', color: '#6b7280' };
     return (
       <span style={{ 
         backgroundColor: `${config.color}15`, 
@@ -127,8 +143,7 @@ function Dashboard() {
         borderRadius: '2rem', 
         fontSize: '0.75rem', 
         fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em'
+        textTransform: 'uppercase'
       }}>
         {config.label}
       </span>
@@ -138,18 +153,18 @@ function Dashboard() {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       <header style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>
               Hola, {usuario?.nombre.split(' ')[0]} 👋
             </h2>
-            <p style={{ color: 'var(--text)', fontSize: '1rem' }}>
-              Aquí tienes un resumen de lo que está sucediendo hoy.
+            <p style={{ color: 'var(--text)', fontSize: '1rem', marginTop: '0.5rem' }}>
+              Aquí tienes un resumen de la actividad del sistema.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-             <button className="premium-btn premium-btn-ghost" style={{ padding: '0.6rem 1rem' }}>
-               <Clock size={18} /> Historial
+             <button className="premium-btn premium-btn-ghost" onClick={() => navigate('/prestamos')}>
+               <History size={18} /> Historial
              </button>
              <button className="premium-btn premium-btn-primary" onClick={() => navigate('/mantenimientos')}>
                <Plus size={18} /> Nuevo Ticket
@@ -158,39 +173,43 @@ function Dashboard() {
         </div>
       </header>
       
-      {/* Quick Actions for Admins */}
-      {isAdminOrTecnico && (
-        <section style={{ marginBottom: '2.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <button className="quick-action-btn" onClick={() => navigate('/prestamos')}>
-              <Package size={18} /> Asignar Equipo
-            </button>
-            <button className="quick-action-btn" onClick={() => navigate('/usuarios')}>
-              <Users size={18} /> Gestionar Usuarios
-            </button>
-            <button className="quick-action-btn" onClick={() => navigate('/equipos')}>
-              <Monitor size={18} /> Ver Inventario
-            </button>
-            <button className="quick-action-btn" onClick={() => navigate('/incidencias')}>
-              <AlertTriangle size={18} /> Reportar Falla
-            </button>
-          </div>
-        </section>
-      )}
+      {/* Quick Actions */}
+      <section style={{ marginBottom: '2.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+          {isAdminOrTecnico && (
+            <>
+              <button className="quick-action-btn" onClick={() => navigate('/prestamos')}>
+                <Package size={18} /> Asignar Equipo
+              </button>
+              <button className="quick-action-btn" onClick={() => navigate('/usuarios')}>
+                <Users size={18} /> Gestionar Usuarios
+              </button>
+              <button className="quick-action-btn" onClick={() => navigate('/equipos')}>
+                <Monitor size={18} /> Ver Inventario
+              </button>
+            </>
+          )}
+          <button className="quick-action-btn" onClick={() => navigate('/incidencias')}>
+            <AlertTriangle size={18} /> Reportar Falla
+          </button>
+        </div>
+      </section>
 
       {/* Stats Grid */}
       <div className="stats-grid">
         {isAdminOrTecnico ? (
           <>
-            <StatCard index={0} title="Equipos Totales" value={stats.equipos} icon={Monitor} color="#6366f1" />
-            <StatCard index={1} title="Usuarios" value={stats.usuarios} icon={Users} color="#10b981" />
-            <StatCard index={2} title="Incidencias" value={stats.incidencias} icon={AlertTriangle} color="#f59e0b" />
-            <StatCard index={3} title="Sanciones" value={stats.sancionesActivas} icon={Gavel} color="#ef4444" />
+            <StatCard index={0} title="Equipos Totales" value={stats.equipos} icon={Monitor} color="#6366f1" onClick={() => navigate('/equipos')} />
+            <StatCard index={1} title="Usuarios Registrados" value={stats.usuarios} icon={Users} color="#10b981" onClick={() => navigate('/usuarios')} />
+            <StatCard index={2} title="Incidencias" value={stats.incidencias} icon={AlertTriangle} color="#f59e0b" onClick={() => navigate('/incidencias')} />
+            <StatCard index={3} title="Sanciones" value={stats.sancionesActivas} icon={Gavel} color="#ef4444" onClick={() => navigate('/sanciones')} />
           </>
         ) : (
           <>
-            <StatCard index={0} title="Mis Equipos" value={stats.prestamos} icon={Package} color="#6366f1" />
-            <StatCard index={1} title="Tickets Activos" value={stats.mantenimientosActivos} icon={Wrench} color="#f59e0b" />
+            <StatCard index={0} title="Mis Préstamos" value={stats.prestamos} icon={Package} color="#6366f1" onClick={() => navigate('/prestamos')} />
+            <StatCard index={1} title="Mis Tickets" value={stats.mantenimientosActivos} icon={Wrench} color="#f59e0b" onClick={() => navigate('/mantenimientos')} />
+            <StatCard index={2} title="Mis Sanciones" value={stats.sancionesActivas} icon={Gavel} color="#ef4444" onClick={() => navigate('/sanciones')} />
+            <StatCard index={3} title="Mis Incidencias" value={stats.incidencias} icon={AlertTriangle} color="#f59e0b" onClick={() => navigate('/incidencias')} />
           </>
         )}
       </div>
@@ -200,7 +219,7 @@ function Dashboard() {
         <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Clock size={20} style={{ color: 'var(--primary)' }} />
-            <h3 style={{ margin: 0 }}>Mantenimientos Recientes</h3>
+            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Mantenimientos Recientes</h3>
           </div>
           <button onClick={() => navigate('/mantenimientos')} className="premium-btn premium-btn-ghost" style={{ fontSize: '0.875rem' }}>
             Ver todos <ArrowRight size={16} />
@@ -228,7 +247,7 @@ function Dashboard() {
               ) : actividadReciente.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '4rem', color: 'var(--text)' }}>
-                    No hay actividad reciente para mostrar.
+                    No hay actividad reciente registrada.
                   </td>
                 </tr>
               ) : (
@@ -240,15 +259,15 @@ function Dashboard() {
                     key={m.cod_mantenimiento}
                   >
                     <td style={{ color: 'var(--primary)', fontWeight: 700 }}>#{m.cod_mantenimiento}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-h)' }}>{m.nombre_equipo}</td>
+                    <td style={{ fontWeight: 600 }}>{m.nombre_equipo}</td>
                     <td style={{ maxWidth: '300px', color: 'var(--text)' }}>
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.descripcion_problema}
+                        {m.descripcion_problema || "Sin descripción"}
                       </div>
                     </td>
                     <td>{renderEstadoBadge(m.cod_estado_mantenimiento)}</td>
                     <td style={{ color: 'var(--text)', fontSize: '0.9rem' }}>
-                      {new Date(m.fecha_inicio_mantenimiento).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                      {new Date(m.fecha_inicio_mantenimiento).toLocaleDateString()}
                     </td>
                   </motion.tr>
                 ))

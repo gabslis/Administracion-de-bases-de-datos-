@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Usuarios from './pages/usuarios';
+import Usuarios from './pages/Usuarios';
+
 import Prestamos from './pages/Prestamos';
 import Mantenimientos from './pages/Mantenimientos';
 import Equipos from './pages/Equipos';
