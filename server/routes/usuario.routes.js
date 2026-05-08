@@ -4,7 +4,8 @@ const { getWriteConnection, getReadConnection } = require('../db');
 const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middleware');
 const { formatDate, val } = require('../utils/date.utils');
 
-router.get('/', authenticateToken, authorizeRoles(1), async (req, res, next) => {
+router.get('/', authenticateToken, authorizeRoles(1, 4), async (req, res, next) => {
+
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM usuarios');
