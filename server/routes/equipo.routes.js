@@ -5,11 +5,17 @@ const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middl
 
 // EQUIPOS
 router.get('/', authenticateToken, authorizeRoles(1, 4), async (req, res, next) => {
+
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM equipos');
+    console.log(`[DB] Equipos listados: ${rows.length} registros (User: ${req.user.cod_usuario})`);
     res.json(rows);
-  } catch (err) { next(err); }
+  } catch (err) { 
+    console.error('[DB Error] Error en GET /equipos:', err);
+    next(err); 
+  }
+
   finally { conn.release(); }
 });
 

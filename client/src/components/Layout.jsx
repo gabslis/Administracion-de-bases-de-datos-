@@ -27,8 +27,10 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const usuario = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuario?.cod_rol === 1 || usuario?.cod_rol === 4;
-  const isAdmin = usuario?.cod_rol === 1;
+  const userRole = usuario ? Number(usuario.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+  const isAdmin = userRole === 1;
+
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -40,8 +42,8 @@ function Layout({ children }) {
     { to: '/dashboard', icon: LayoutDashboard, text: 'Dashboard', roles: 'all' },
     { to: '/usuarios', icon: Users, text: 'Usuarios', roles: 'admin' },
     { to: '/equipos', icon: Monitor, text: 'Inventario', roles: 'staff' },
-    { to: '/ubicaciones', icon: MapPin, text: 'Ubicaciones', roles: 'all' },
-    { to: '/prestamos', icon: Package, text: 'Asignaciones', roles: 'staff' },
+    { to: '/ubicaciones', icon: MapPin, text: 'Ubicaciones', roles: 'staff' },
+    { to: '/prestamos', icon: Package, text: 'Asignaciones', roles: 'all' },
     { to: '/mantenimientos', icon: Wrench, text: 'Mantenimientos', roles: 'all' },
     { to: '/incidencias', icon: AlertTriangle, text: 'Incidencias', roles: 'all' },
     { to: '/sanciones', icon: Gavel, text: 'Sanciones', roles: 'all' },

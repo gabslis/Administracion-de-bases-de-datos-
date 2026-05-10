@@ -11,12 +11,27 @@ const prestamoRoutes = require('./routes/prestamo.routes');
 const usuarioRoutes = require('./routes/usuario.routes');
 const incidenciaRoutes = require('./routes/incidencia.routes');
 const sancionRoutes = require('./routes/sancion.routes');
+const ubicacionRoutes = require('./routes/ubicacion.routes');
+const catalogoRoutes = require('./routes/catalogo.routes');
+
+
 
 const app = express();
 
 // Global Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Logger Middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
+
 
 // Routes
 app.use('/auth', authRoutes); 
@@ -26,6 +41,10 @@ app.use('/prestamos', prestamoRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/incidencias', incidenciaRoutes);
 app.use('/sanciones', sancionRoutes);
+app.use('/ubicaciones', ubicacionRoutes);
+app.use('/catalogos', catalogoRoutes);
+
+
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));

@@ -19,11 +19,13 @@ const authenticateToken = (req, res, next) => {
 
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.cod_rol)) {
+    const userRole = Number(req.user.cod_rol);
+    if (!roles.includes(userRole)) {
       return res.status(403).json({ error: 'No tienes permisos para realizar esta acción.' });
     }
     next();
   };
 };
+
 
 module.exports = { authenticateToken, authorizeRoles };

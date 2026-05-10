@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 
 function RoleRoute({ children, allowedRoles }) {
   const usuario = JSON.parse(localStorage.getItem('usuario'));
-  const hasPermission = usuario && allowedRoles.includes(usuario.cod_rol);
+  const userRole = usuario ? Number(usuario.cod_rol) : null;
+  const hasPermission = userRole !== null && allowedRoles.includes(userRole);
+
 
   useEffect(() => {
     if (!hasPermission) {

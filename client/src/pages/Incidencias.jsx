@@ -19,7 +19,9 @@ import api from "../api/axios";
 
 function Incidencias() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+
 
   const vacio = {
     cod_prestamo: "",
@@ -89,9 +91,10 @@ function Incidencias() {
   };
 
   const filteredIncidencias = incidencias.filter(i => 
-    i.descripcion?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.cod_prestamo.toString().includes(searchQuery)
+    (i.descripcion || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (i.cod_prestamo || "").toString().includes(searchQuery)
   );
+
 
   const getGravedadStyles = (id) => {
     const configs = {

@@ -24,10 +24,12 @@ import api from "../api/axios";
 
 function Mantenimientos() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isTecnico = usuarioActual?.cod_rol === 4;
-  const isAdmin = usuarioActual?.cod_rol === 1;
-  const isDocenteOrDirector = usuarioActual?.cod_rol === 2 || usuarioActual?.cod_rol === 3;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isTecnico = userRole === 4;
+  const isAdmin = userRole === 1;
+  const isDocenteOrDirector = userRole === 2 || userRole === 3;
   const isAdminOrTecnico = isTecnico || isAdmin;
+
 
   const [mantenimientos, setMantenimientos] = useState([]);
   const [tipos, setTipos] = useState([]);
@@ -54,17 +56,17 @@ function Mantenimientos() {
       ]);
       setTipos(tRes.data);
 
-      let mData = mRes.data;
-      if (isDocenteOrDirector) {
-        mData = mData.filter(m => m.cod_usuario === usuarioActual.cod_usuario);
-      }
-      setMantenimientos(mData);
+      setMantenimientos(mRes.data);
 
       if (isDocenteOrDirector) {
         const pRes = await api.get("/prestamos");
         const misPrestamos = pRes.data.filter(p => p.cod_usuario === usuarioActual.cod_usuario);
         setMisEquipos(misPrestamos);
+      } else if (isAdminOrTecnico) {
+        const eRes = await api.get("/equipos");
+        setMisEquipos(eRes.data);
       }
+
     } catch (err) {
       console.error(err);
       toast.error("Error al sincronizar datos");
@@ -79,21 +81,26 @@ function Mantenimientos() {
     e.preventDefault();
     try {
       const payload = {
-        ...formCrear,
+        cod_equipo: parseInt(formCrear.cod_equipo),
+        cod_tipo_mantenimiento: parseInt(formCrear.cod_tipo_mantenimiento),
+        descripcion_problema: formCrear.descripcion_problema.trim(),
         cod_usuario: usuarioActual.cod_usuario,
         cod_estado_mantenimiento: 1,
         fecha_inicio_mantenimiento: new Date().toISOString().split('T')[0],
-        hora_recibida: new Date().toTimeString().split(' ')[0],
+        hora_recibida: new Date().toLocaleTimeString('it-IT'), // Formato HH:MM:SS
       };
+      
       await api.post("/mantenimientos", payload);
       toast.success("Solicitud enviada correctamente");
       setFormCrear({ cod_equipo: "", cod_tipo_mantenimiento: "", descripcion_problema: "" });
       setMostrarForm(false);
       cargarDatos();
     } catch (err) {
-      toast.error("Error al crear el ticket");
+      const msg = err.response?.data?.error || "Error al crear el ticket. Revisa los valores.";
+      toast.error(msg);
     }
   };
+
 
   const handleAceptarTicket = async (e) => {
     e.preventDefault();
@@ -151,10 +158,11 @@ function Mantenimientos() {
     return mantenimientos.filter(m => {
       const matchSearch = (m.nombre_equipo || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (m.nombre_usuario || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          m.cod_mantenimiento.toString().includes(searchQuery);
-      const matchStatus = statusFilter === "" || m.cod_estado_mantenimiento.toString() === statusFilter;
+                          (m.serial || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (m.cod_mantenimiento || '').toString().includes(searchQuery);
+      const matchStatus = statusFilter === "" || (m.cod_estado_mantenimiento || '').toString() === statusFilter;
       return matchSearch && matchStatus;
-    }).sort((a, b) => b.cod_mantenimiento - a.cod_mantenimiento);
+    }).sort((a, b) => (b.cod_mantenimiento || 0) - (a.cod_mantenimiento || 0));
   }, [mantenimientos, searchQuery, statusFilter]);
 
   const renderStatusBadge = (id) => {
@@ -180,7 +188,8 @@ function Mantenimientos() {
           <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Mantenimiento Técnico</h2>
           <p style={{ color: 'var(--text)' }}>Monitorea y gestiona las solicitudes de reparación.</p>
         </div>
-        {isDocenteOrDirector && (
+        {(isDocenteOrDirector || isAdminOrTecnico) && (
+
           <button onClick={() => setMostrarForm(!mostrarForm)} className="premium-btn premium-btn-primary">
             {mostrarForm ? <X size={18} /> : <Plus size={18} />}
             {mostrarForm ? 'Cerrar Formulario' : 'Nueva Solicitud'}

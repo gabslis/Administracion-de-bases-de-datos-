@@ -17,7 +17,9 @@ import api from "../api/axios";
 
 function Equipos() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+
 
   const vacio = { serial: "", cod_marca: "", nombre_equipo: "", cod_estado_equipo: "" };
 
@@ -80,9 +82,10 @@ function Equipos() {
   };
 
   const filteredEquipos = equipos.filter(e => 
-    e.nombre_equipo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.serial.toLowerCase().includes(searchQuery.toLowerCase())
+    (e.nombre_equipo || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (e.serial || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
+
 
   const renderBadge = (id) => {
     const estado = estadosList.find(x => x.cod_estado_equipo === id);

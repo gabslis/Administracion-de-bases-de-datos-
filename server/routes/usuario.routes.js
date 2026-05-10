@@ -14,7 +14,7 @@ router.get('/', authenticateToken, authorizeRoles(1, 4), async (req, res, next) 
   finally { conn.release(); }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', authenticateToken, authorizeRoles(1), async (req, res, next) => {
   const conn = await getWriteConnection();
   try {
     const { nombre, cod_rol, correo, password, fecha_ingreso, cod_estado_usuario } = req.body;

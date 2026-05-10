@@ -19,6 +19,7 @@ const formatDate = (dateStr) => {
  * @param {*} v 
  * @returns {*}
  */
-const val = (v) => v === undefined ? null : v;
+const val = (v) => (v === undefined || v === "" || v === null) ? null : v;
+
 
 module.exports = { formatDate, val };

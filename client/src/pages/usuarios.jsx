@@ -22,7 +22,11 @@ const vacio = { nombre: "", cod_rol: "", correo: "", password: "", fecha_ingreso
 
 function Usuarios() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdmin = usuarioActual?.cod_rol === 1;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+  const isAdmin = userRole === 1;
+
+
 
   const [usuarios, setUsuarios] = useState([]);
   const [form, setForm] = useState(vacio);
@@ -61,12 +65,13 @@ function Usuarios() {
 
   const filteredUsuarios = useMemo(() => {
     return usuarios.filter(u => 
-      u.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.correo.toLowerCase().includes(searchQuery.toLowerCase())
+      (u.nombre || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.correo || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [usuarios, searchQuery]);
 
-  if (!isAdmin) {
+
+  if (!isAdminOrTecnico) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="premium-card" style={{ textAlign: 'center', maxWidth: '400px' }}>
@@ -74,11 +79,12 @@ function Usuarios() {
             <Lock size={32} />
           </div>
           <h2 style={{ marginBottom: '0.5rem' }}>Acceso Restringido</h2>
-          <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>Esta sección es exclusiva para administradores del sistema. Por favor, contacta con soporte si crees que esto es un error.</p>
+          <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>Solo administradores y técnicos pueden gestionar usuarios. Por favor, contacta con soporte si crees que esto es un error.</p>
         </motion.div>
       </div>
     );
   }
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

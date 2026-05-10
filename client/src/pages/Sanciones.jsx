@@ -19,7 +19,9 @@ import api from "../api/axios";
 
 function Sanciones() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+
 
   // ── VISTA DEL ADMINISTRADOR / TÉCNICO ──────────────────────────────────────
   const AdminView = () => {

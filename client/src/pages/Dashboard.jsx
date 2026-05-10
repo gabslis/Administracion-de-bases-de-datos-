@@ -19,9 +19,13 @@ import api from '../api/axios';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const usuario = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuario?.cod_rol === 1 || usuario?.cod_rol === 4;
-  const isAdmin = usuario?.cod_rol === 1;
+  const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isTecnico = userRole === 4;
+  const isAdmin = userRole === 1;
+  const isDocenteOrDirector = userRole === 2 || userRole === 3;
+  const isAdminOrTecnico = isTecnico || isAdmin;
+
   
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -87,8 +91,9 @@ function Dashboard() {
         setTimeout(() => setIsLoading(false), 600);
       }
     };
-    if (usuario) fetchDatos();
+    if (usuarioActual) fetchDatos();
   }, []);
+
 
   const StatCard = ({ title, value, icon: Icon, color, index, onClick }) => (
     <motion.div 
@@ -156,8 +161,9 @@ function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>
-              Hola, {usuario?.nombre.split(' ')[0]} 👋
+              Hola, {usuarioActual?.nombre?.split(' ')[0] || 'Usuario'} 👋
             </h2>
+
             <p style={{ color: 'var(--text)', fontSize: '1rem', marginTop: '0.5rem' }}>
               Aquí tienes un resumen de la actividad del sistema.
             </p>

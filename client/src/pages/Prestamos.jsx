@@ -21,7 +21,9 @@ import api from "../api/axios";
 function Prestamos() {
   const navigate = useNavigate();
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
-  const isAdminOrTecnico = usuarioActual?.cod_rol === 1 || usuarioActual?.cod_rol === 4;
+  const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
+  const isAdminOrTecnico = userRole === 1 || userRole === 4;
+
 
   const vacio = { 
     cod_usuario: "", 
@@ -45,11 +47,7 @@ function Prestamos() {
   const cargar = async () => {
     try {
       const res = await api.get("/prestamos");
-      let data = res.data;
-      if (!isAdminOrTecnico) {
-        data = data.filter(p => p.cod_usuario === usuarioActual.cod_usuario);
-      }
-      setPrestamos(data);
+      setPrestamos(res.data);
     } catch(err) {
       toast.error("Error al cargar préstamos");
     }
@@ -58,20 +56,28 @@ function Prestamos() {
   const cargarDependencias = async () => {
     if (!isAdminOrTecnico) return;
     try {
+      console.log("[Debug] Cargando dependencias para rol:", userRole);
       const [usrRes, eqRes, auRes, accRes] = await Promise.all([
         api.get("/usuarios"),
         api.get("/equipos"),
         api.get("/prestamos/aulas"),
         api.get("/prestamos/accesorios")
       ]);
+      console.log("[Debug] Dependencias cargadas:", {
+        usuarios: usrRes.data.length,
+        equipos: eqRes.data.length,
+        aulas: auRes.data.length
+      });
       setUsuariosList(usrRes.data);
       setEquiposList(eqRes.data.filter(e => e.cod_estado_equipo === 1)); // Solo equipos disponibles
       setAulasList(auRes.data);
       setAccesoriosList(accRes.data);
     } catch (err) {
-      console.error("Error cargando dependencias", err);
+      console.error("[Debug Error] Error cargando dependencias de préstamos:", err.response?.status, err.message);
+      toast.error("Fallo al cargar listas de selección");
     }
   };
+
 
   useEffect(() => { 
     cargar(); 
@@ -103,10 +109,15 @@ function Prestamos() {
   };
 
   const filteredPrestamos = prestamos.filter(p => 
-    p.nombre_usuario?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.nombre_equipo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.cod_prestamo.toString().includes(searchQuery)
+    (p.nombre_usuario || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.nombre_equipo || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.nombre_aula || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.nombre_edificio || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.cod_prestamo || "").toString().includes(searchQuery)
   );
+
+
+
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -162,7 +173,12 @@ function Prestamos() {
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Aula / Ubicación</label>
                   <select className="premium-input" value={form.cod_aula} onChange={e => setForm({...form, cod_aula: e.target.value})} required>
                     <option value="">Seleccione aula...</option>
-                    {aulasList.map(a => <option key={a.cod_aula} value={a.cod_aula}>{a.nombre_aula}</option>)}
+                    {aulasList.map(a => (
+                      <option key={a.cod_aula} value={a.cod_aula}>
+                        {a.nombre_aula} {a.nombre_edificio ? `- ${a.nombre_edificio}` : ''}
+                      </option>
+                    ))}
+
                   </select>
                 </div>
                 <div>
@@ -220,7 +236,11 @@ function Prestamos() {
                     <div style={{ fontWeight: 600 }}>{p.nombre_equipo}</div>
                     {p.nombre_accesorio && <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 500 }}>+ {p.nombre_accesorio}</div>}
                   </td>
-                  <td>{p.nombre_aula}</td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{p.nombre_aula}</div>
+                    {p.nombre_edificio && <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{p.nombre_edificio}</div>}
+                  </td>
+
                   <td style={{ fontSize: '0.875rem' }}>{p.fecha_salida?.split("T")[0]}</td>
                   <td style={{ fontSize: '0.875rem', color: 'var(--danger)', fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
