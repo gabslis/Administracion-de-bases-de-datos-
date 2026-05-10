@@ -21,11 +21,10 @@ function Login() {
 
   useEffect(() => {
     if (!isLogin) {
-      api.get('/usuarios/roles').then(res => {
-        const allowedRoles = res.data.filter(r => r.cod_rol !== 1 && r.cod_rol !== 4);
-        setRoles(allowedRoles);
-        if (allowedRoles.length > 0) {
-          setCodRol(allowedRoles[0].cod_rol);
+      api.get('/auth/public-roles').then(res => {
+        setRoles(res.data);
+        if (res.data.length > 0) {
+          setCodRol(res.data[0].cod_rol);
         }
       }).catch(err => {
         console.error("Error al cargar roles:", err);
@@ -46,14 +45,11 @@ function Login() {
         toast.success(`Bienvenido, ${res.data.usuario.nombre}`);
         navigate('/dashboard');
       } else {
-        const fecha_ingreso = new Date().toISOString().split('T')[0];
-        await api.post('/usuarios', {
+        await api.post('/auth/register', {
           nombre,
           correo,
           password,
-          cod_rol: codRol,
-          fecha_ingreso,
-          cod_estado_usuario: 1
+          cod_rol: codRol
         });
         toast.success('Usuario creado exitosamente. Ahora puedes iniciar sesión.');
         setIsLogin(true);

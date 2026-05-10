@@ -187,9 +187,11 @@ function Dashboard() {
               <button className="quick-action-btn" onClick={() => navigate('/prestamos')}>
                 <Package size={18} /> Asignar Equipo
               </button>
-              <button className="quick-action-btn" onClick={() => navigate('/usuarios')}>
-                <Users size={18} /> Gestionar Usuarios
-              </button>
+              {isAdmin && (
+                <button className="quick-action-btn" onClick={() => navigate('/usuarios')}>
+                  <Users size={18} /> Gestionar Usuarios
+                </button>
+              )}
               <button className="quick-action-btn" onClick={() => navigate('/equipos')}>
                 <Monitor size={18} /> Ver Inventario
               </button>
@@ -206,7 +208,11 @@ function Dashboard() {
         {isAdminOrTecnico ? (
           <>
             <StatCard index={0} title="Equipos Totales" value={stats.equipos} icon={Monitor} color="#6366f1" onClick={() => navigate('/equipos')} />
-            <StatCard index={1} title="Usuarios Registrados" value={stats.usuarios} icon={Users} color="#10b981" onClick={() => navigate('/usuarios')} />
+            {isAdmin ? (
+              <StatCard index={1} title="Usuarios Registrados" value={stats.usuarios} icon={Users} color="#10b981" onClick={() => navigate('/usuarios')} />
+            ) : (
+              <StatCard index={1} title="Préstamos Totales" value={stats.prestamos} icon={Package} color="#10b981" onClick={() => navigate('/prestamos')} />
+            )}
             <StatCard index={2} title="Incidencias" value={stats.incidencias} icon={AlertTriangle} color="#f59e0b" onClick={() => navigate('/incidencias')} />
             <StatCard index={3} title="Sanciones" value={stats.sancionesActivas} icon={Gavel} color="#ef4444" onClick={() => navigate('/sanciones')} />
           </>

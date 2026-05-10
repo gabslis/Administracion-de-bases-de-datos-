@@ -53,6 +53,7 @@ function Configuracion() {
   };
 
   useEffect(() => {
+    setData([]); // Limpiar datos anteriores inmediatamente al cambiar de pestaña
     cargarDatos();
     setNuevoValor("");
     setSearchQuery("");
@@ -60,8 +61,12 @@ function Configuracion() {
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
+      if (!item) return false;
       const val = item[activeTab.keyName];
-      return (val || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
+      // Solo mostrar si tiene un valor no vacío y coincide con la búsqueda
+      const hasValue = val !== null && val !== undefined && val.toString().trim() !== "";
+      const matchesSearch = (val || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
+      return hasValue && matchesSearch;
     });
   }, [data, searchQuery, activeTab]);
 

@@ -20,6 +20,12 @@ const createCatalogRoutes = (tableName, idCol, nameCol) => {
     const conn = await getWriteConnection();
     try {
       const payload = req.body;
+      const value = payload[nameCol];
+
+      if (!value || value.toString().trim() === "") {
+        return res.status(400).json({ error: `El campo ${nameCol} es obligatorio.` });
+      }
+
       const [result] = await conn.query(`INSERT INTO ${tableName} SET ?`, [payload]);
       res.json({ id: result.insertId });
     } catch (err) { next(err); }

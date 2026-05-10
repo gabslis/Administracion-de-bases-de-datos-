@@ -23,7 +23,6 @@ const vacio = { nombre: "", cod_rol: "", correo: "", password: "", fecha_ingreso
 function Usuarios() {
   const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
   const userRole = usuarioActual ? Number(usuarioActual.cod_rol) : null;
-  const isAdminOrTecnico = userRole === 1 || userRole === 4;
   const isAdmin = userRole === 1;
 
 
@@ -71,7 +70,7 @@ function Usuarios() {
   }, [usuarios, searchQuery]);
 
 
-  if (!isAdminOrTecnico) {
+  if (!isAdmin) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="premium-card" style={{ textAlign: 'center', maxWidth: '400px' }}>
@@ -79,7 +78,7 @@ function Usuarios() {
             <Lock size={32} />
           </div>
           <h2 style={{ marginBottom: '0.5rem' }}>Acceso Restringido</h2>
-          <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>Solo administradores y técnicos pueden gestionar usuarios. Por favor, contacta con soporte si crees que esto es un error.</p>
+          <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>Solo administradores globales pueden gestionar usuarios. Por favor, contacta con soporte si crees que esto es un error.</p>
         </motion.div>
       </div>
     );
