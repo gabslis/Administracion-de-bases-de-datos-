@@ -5,10 +5,19 @@ const { authenticateToken, authorizeRoles } = require('../middlewares/auth.middl
 const { formatDate, val } = require('../utils/date.utils');
 
 router.get('/', authenticateToken, authorizeRoles(1), async (req, res, next) => {
-
   const conn = await getReadConnection();
   try {
     const [rows] = await conn.query('SELECT * FROM usuarios');
+    res.json(rows);
+  } catch (err) { next(err); }
+  finally { conn.release(); }
+});
+
+// LISTA LITE PARA SELECTORES (Accesible por Técnicos)
+router.get('/selector', authenticateToken, authorizeRoles(1, 4), async (req, res, next) => {
+  const conn = await getReadConnection();
+  try {
+    const [rows] = await conn.query('SELECT cod_usuario, nombre FROM usuarios WHERE cod_estado_usuario = 1');
     res.json(rows);
   } catch (err) { next(err); }
   finally { conn.release(); }

@@ -55,7 +55,7 @@ function Sanciones() {
 
         const [sanRes, usrRes, eqRes] = await Promise.all([
           safeFetch("/sanciones"),
-          safeFetch("/usuarios"),
+          safeFetch("/usuarios/selector"),
           safeFetch("/equipos")
         ]);
         

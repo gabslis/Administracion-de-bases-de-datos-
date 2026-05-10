@@ -58,7 +58,7 @@ function Prestamos() {
     try {
       console.log("[Debug] Cargando dependencias para rol:", userRole);
       const [usrRes, eqRes, auRes, accRes] = await Promise.all([
-        api.get("/usuarios"),
+        api.get("/usuarios/selector"),
         api.get("/equipos"),
         api.get("/prestamos/aulas"),
         api.get("/prestamos/accesorios")

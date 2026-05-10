@@ -197,9 +197,11 @@ function Dashboard() {
               </button>
             </>
           )}
-          <button className="quick-action-btn" onClick={() => navigate('/incidencias')}>
-            <AlertTriangle size={18} /> Reportar Falla
-          </button>
+          {isAdminOrTecnico && (
+            <button className="quick-action-btn" onClick={() => navigate('/incidencias')}>
+              <AlertTriangle size={18} /> Reportar Falla
+            </button>
+          )}
         </div>
       </section>
 

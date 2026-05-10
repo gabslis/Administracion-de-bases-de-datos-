@@ -112,11 +112,13 @@ function Incidencias() {
           <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Gestión de Incidencias</h2>
           <p style={{ color: 'var(--text)' }}>Reporta fallos o daños en los equipos asignados.</p>
         </div>
-        <button onClick={() => { setForm(vacio); setMostrarForm(!mostrarForm); }}
-          className="premium-btn premium-btn-danger">
-          {mostrarForm ? <X size={18} /> : <AlertTriangle size={18} />}
-          {mostrarForm ? 'Cerrar Reporte' : 'Reportar Incidencia'}
-        </button>
+        {isAdminOrTecnico && (
+          <button onClick={() => { setForm(vacio); setMostrarForm(!mostrarForm); }}
+            className="premium-btn premium-btn-danger">
+            {mostrarForm ? <X size={18} /> : <AlertTriangle size={18} />}
+            {mostrarForm ? 'Cerrar Reporte' : 'Reportar Incidencia'}
+          </button>
+        )}
       </header>
 
       <AnimatePresence>
