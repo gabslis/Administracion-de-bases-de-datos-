@@ -14,9 +14,15 @@ router.post('/login', async (req, res, next) => {
     }
 
     const usuario = rows[0];
+
+    // Verificar que el usuario esté activo
+    if (usuario.cod_estado_usuario !== 1) {
+      return res.status(401).json({ error: 'Usuario inactivo o suspendido, contacte al administrador' });
+    }
+
     const bcrypt = require('bcryptjs');
     const isMatch = await bcrypt.compare(password, usuario.contraseña);
-    
+
     if (!isMatch) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
